@@ -8,11 +8,8 @@
 //Screen Dims: 240 x 320
 
 //TO-DO:
-//--Modify code such that read_x() and read_y() can coexist
-//  (currently, only one signal shifts on scope and the other signal does
-//   not behave as expected, depending on which fn is called first)
 //Setup DAC
-//
+//Setup game physics and graphics
 
 //-----------------------------------------------
 //               FUNCTION DECLARATIONS
