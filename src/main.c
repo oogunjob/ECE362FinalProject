@@ -1,9 +1,11 @@
 #include "stm32f0xx.h"
 #include <stdio.h>
+#define SCREEN_HEIGHT 320
+#define SCREEN_WIDTH  240
 //NOTES:
 //TIM6 for DAC
-//TIM2 for ADC
-//TIM3 for read_x() and read_y()
+//TIM3 for read_x() and read_y() (which use ADC channels 8 and 9)
+//Screen Dims: 240 x 320
 
 //TO-DO:
 //--Modify code such that read_x() and read_y() can coexist
@@ -20,17 +22,20 @@ void init_reads();
 void init_adc();
 void read_y();
 void read_x();
+int convert_coord(float coord, char dim);
 void nano_wait(unsigned int n);
-void init_spi1();
 void spi_cmd(unsigned int data);
 void spi_data(unsigned int data);
 void spi1_display1(const char *string);
 void spi1_display2(const char *string);
 void spi1_enable_dma();
+void init_spi1();
+void spi1_init_oled();
 
 //-----------------------------------------------
 //                 INITIALIZATIONS
 //-----------------------------------------------
+
 //Initialize the TIM3 ISR for reading the y coordinate
 void init_tim3() {
     RCC -> APB1ENR |= RCC_APB1ENR_TIM3EN;
@@ -72,28 +77,7 @@ void enable_dma(void)
     DMA1_Channel5 -> CCR |= DMA_CCR_EN;
 }
 
-//-----------------------------------------------
-//                TIMERS/ISR
-//-----------------------------------------------
-void TIM2_IRQHandler()
-{
-
-}
-
-//ISR for reading x and y analog coords
-void TIM3_IRQHandler() {
-    TIM3 -> SR &= ~TIM_SR_UIF;
-    //Read x coordinate and output to SPI OLED
-    read_x();
-    nano_wait(500000);  //500 us between reads
-    //Read y coordinate and output to SPI OLED
-    read_y();
-    nano_wait(500000);  //500 us between reads
-}
-
-//-----------------------------------------------
-// 2.4 SPI OLED Display
-//-----------------------------------------------
+//Initialize the SPI OLED display attached to GPIOA
 void init_spi1() {
     // PA5  SPI1_SCK
     // PA6  SPI1_MISO
@@ -111,9 +95,27 @@ void init_spi1() {
     SPI1 -> CR2 |= SPI_CR2_NSSP;
     SPI1 -> CR2 |= SPI_CR2_TXDMAEN;
     SPI1 -> CR1 |= SPI_CR1_SPE;
-
 }
 
+//-----------------------------------------------
+//                TIMERS/ISR
+//-----------------------------------------------
+
+//ISR for reading x and y analog coords
+void TIM3_IRQHandler() {
+    TIM3 -> SR &= ~TIM_SR_UIF;
+    //Read x coordinate and output resulting pixel to SPI OLED
+    read_x();
+    nano_wait(500000);  //500 us between reads
+
+    //Read y coordinate and output resulting pixel to SPI OLED
+    read_y();
+    nano_wait(500000);  //500 us between reads
+}
+
+//-----------------------------------------------
+// 2.4 SPI OLED Display
+//-----------------------------------------------
 void spi_cmd(unsigned int data) {
     while(!(SPI1->SR & SPI_SR_TXE)) {}
     SPI1->DR = data;
@@ -153,31 +155,6 @@ void spi1_enable_dma(void) {
 //-----------------------------------------------
 //               TOUCHSCREEN INPUT
 //-----------------------------------------------
-//Change PB0's MODER to output 3V to Y+
-//Change PB1's MODER to read in analog input from X+ (ADC_IN9)
-//Drive PB2 low to allow floating values input to TFT pin X-
-//Drive PB3 high to set Y- to ground
-//Triggered by TIM3 ISR
-void read_y() {
-    GPIOB -> MODER &= ~(GPIO_MODER_MODER0 | GPIO_MODER_MODER1);
-    GPIOB -> MODER |= GPIO_MODER_MODER0_0 | GPIO_MODER_MODER1;
-    GPIOB -> ODR |= GPIO_ODR_0;
-    GPIOB -> ODR &= ~GPIO_ODR_2;
-    GPIOB -> ODR |= GPIO_ODR_3;
-    TIM2 -> SR &= ~TIM_SR_UIF;
-    ADC1 -> CHSELR = 0;
-    ADC1 -> CHSELR = (1<<9);
-    while(!(ADC1 -> ISR & ADC_ISR_ADRDY));
-    ADC1 -> CR |= ADC_CR_ADSTART;
-    while(!(ADC1 -> ISR & ADC_ISR_EOC));
-
-    for(int x=0; x<10000; x++)
-        ;
-    float coord = (ADC1 -> DR) * 3 / 4095.0;
-    char string[21];
-    snprintf(string, 21, "Ycoord: %2.2f", coord);
-    spi1_display2(string);
-}
 
 //Change PB0's MODER to read in analog input from Y+ (ADC_IN8)
 //Change PB1's MODER to output 3V to X+
@@ -199,11 +176,76 @@ void read_x() {
 
     for(int x=0; x<10000; x++)
         ;
-    float coord = (ADC1 -> DR) * 3 / 4095.0;
+    //Display coordinate on OLED
+    float coord = (ADC1 -> DR) * 2.83 / 4095.0;
     char string[21];
-    snprintf(string, 21, "Xcoord: %2.2f", coord);
+    int pixel = convert_coord(coord, 'x');
+    snprintf(string, 21, "X Pixel: %03d", pixel);
+    //snprintf(string, 21, "X Voltage: %2.2f", coord);
     spi1_display1(string);
 
+}
+
+//Change PB0's MODER to output 3V to Y+
+//Change PB1's MODER to read in analog input from X+ (ADC_IN9)
+//Drive PB2 low to allow floating values input to TFT pin X-
+//Drive PB3 high to set Y- to ground
+//Triggered by TIM3 ISR
+void read_y() {
+    GPIOB -> MODER &= ~(GPIO_MODER_MODER0 | GPIO_MODER_MODER1);
+    GPIOB -> MODER |= GPIO_MODER_MODER0_0 | GPIO_MODER_MODER1;
+    GPIOB -> ODR |= GPIO_ODR_0;
+    GPIOB -> ODR &= ~GPIO_ODR_2;
+    GPIOB -> ODR |= GPIO_ODR_3;
+    TIM2 -> SR &= ~TIM_SR_UIF;
+    ADC1 -> CHSELR = 0;
+    ADC1 -> CHSELR = (1<<9);
+    while(!(ADC1 -> ISR & ADC_ISR_ADRDY));
+    ADC1 -> CR |= ADC_CR_ADSTART;
+    while(!(ADC1 -> ISR & ADC_ISR_EOC));
+
+    for(int x=0; x<10000; x++)
+        ;
+    //Display coordinate on OLED
+    float coord = (ADC1 -> DR) * 2.83 / 4095.0;
+    char string[21];
+    int pixel = convert_coord(coord, 'y');
+    snprintf(string, 21, "Y Pixel: %03d", pixel);
+    //snprintf(string, 21, "Y Voltage: %2.2f", coord);
+    spi1_display2(string);
+}
+
+//Convert given coordinate in voltage to representative pixel
+//NEEDS TWEAKING
+int convert_coord(float coord, char dim) {
+    //Convert value and keep in hundreds
+    //Ex. 1.732 -> 173, 2.467 -> 247
+    int value = (int)(coord * 100 + 0.5);
+
+    //Dead zone (no pixels) until 0.23 V reached
+    if(dim == 'y')
+        value -= 23;
+    //Dead zone (no pixels) until 0.19 V reached
+    else
+        value -= 19;
+
+    //If, after subtracting, value is 0 or negative, return 0
+    //Also, if value exceeds max allowable, return 0 (went off screen)
+    if(dim == 'x' && (value <= 0 || value > 235))
+        return 0;
+    else if(dim == 'y' && (value <= 0 || value > 227))
+            return 0;
+
+//Ratio of max voltage ~2.27 to pixel amount:
+//X: 240:227 == 1.057 ~= 1.08 <-- (trial and error value)
+//Y: 320:227 == 1.410 <-- (trial and error value)
+
+    //Return, having accounted for voltage off screen
+    //Setup coordinate plane such that origin is at LL corner of screen
+    if(dim == 'y')
+        return 1.41 * value;
+    else
+        return SCREEN_WIDTH - (1.08 * value);
 }
 
 //-----------------------------------------------
@@ -212,10 +254,10 @@ void read_x() {
 
 int main() {
     init_adc();
-    init_reads();
-    init_tim3();
     init_spi1();
     spi1_init_oled();
+    init_reads();
+    init_tim3();
     for(;;)
         ;
 }
