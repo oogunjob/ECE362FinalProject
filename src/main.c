@@ -10,7 +10,7 @@ extern Point vector[VECTOR_SIZE];
 
 //NOTES:
 //Screen Dims: 240 x 320
-//TIM6 for DAC
+//TIM6 for DAC/DMA (NO ISR for DAC)
 //TIM3 for read_x() and read_y() (which use ADC channels 8 and 9)
 //OLED display functions in oled.h/oled.c
 //Swipe mechanics and storage functions in swipe.h/swipe.c
@@ -65,7 +65,7 @@ void TIM3_IRQHandler() {
     //Expect to see this created temp point as first vector entry
 
 //DEBUGGING AND VERIFICATION----------------------------------------------------
-    //Print this vector entry
+    //Print this first vector entry
 
 #define TEST_FIRST
 #ifdef TEST_FIRST
