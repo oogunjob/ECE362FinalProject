@@ -44,8 +44,8 @@ void init_adc()
 
 //Change PB0's MODER to read in analog input from Y+ (ADC_IN8)
 //Change PB1's MODER to output 3V to X+
-//Drive PB2 high to set Y- to ground
-//Drive PB3 low to allow floating values input to TFT pin X-
+//Drive PB2 high to set X- to ground
+//Drive PB3 low to allow floating values input to TFT pin Y-
 //Triggered by TIM3 ISR
 int read_x() {
     GPIOB -> MODER &= ~(GPIO_MODER_MODER0 | GPIO_MODER_MODER1);
