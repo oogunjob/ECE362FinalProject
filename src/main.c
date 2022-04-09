@@ -2,11 +2,14 @@
 #include <stdio.h>
 #include "swipe.h"
 #include "oled.h"
+#include "graphics.h"
 #define SCREEN_HEIGHT 320
 #define SCREEN_WIDTH  240
 #define VECTOR_SIZE 10
 
 extern Point vector[VECTOR_SIZE];
+extern const Picture background; // A 240x320 background image
+extern const Picture ball; // A 19x19 purple ball with white boundaries
 
 //NOTES:
 //Screen Dims: 240 x 320
@@ -108,7 +111,12 @@ void TIM3_IRQHandler() {
 //                MISCELLANEOUS
 //-----------------------------------------------
 
+
 int main() {
+    LCD_Setup(); // this will call init_lcd_spi()
+    basic_drawing();
+    LCD_DrawPicture(0,0,&background);
+    update2(0, 0);
     init_adc();
     init_spi1();
     spi1_init_oled();
