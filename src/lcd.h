@@ -67,6 +67,16 @@ extern lcd_dev_t lcddev;
 #define LGRAYBLUE   0XA651
 #define LBBLUE      0X2B12
 
+typedef struct {
+    unsigned int   width;
+    unsigned int   height;
+    unsigned int   bytes_per_pixel; // 2:RGB16, 3:RGB, 4:RGBA
+    union {
+    unsigned char  pixel_data[0]; // variable length array
+    unsigned short pix2[0];
+    };
+} Picture;
+
 void init_lcd_spi(void);
 void LCD_Setup(void);
 void LCD_Init(void (*reset)(int), void (*select)(int), void (*reg_select)(int));
@@ -80,20 +90,6 @@ void LCD_DrawTriangle(u16 x0,u16 y0, u16 x1,u16 y1, u16 x2,u16 y2, u16 c);
 void LCD_DrawFillTriangle(u16 x0,u16 y0, u16 x1,u16 y1, u16 x2,u16 y2, u16 c);
 void LCD_DrawChar(u16 x,u16 y,u16 fc, u16 bc, char num, u8 size, u8 mode);
 void LCD_DrawString(u16 x,u16 y, u16 fc, u16 bg, const char *p, u8 size, u8 mode);
-
-//===========================================================================
-// C Picture data structure.
-//===========================================================================
-typedef struct {
-    unsigned int   width;
-    unsigned int   height;
-    unsigned int   bytes_per_pixel; // 2:RGB16, 3:RGB, 4:RGBA
-    union {
-    unsigned char  pixel_data[0]; // variable length array
-    unsigned short pix2[0];
-    };
-} Picture;
-
 void LCD_DrawPicture(int x0, int y0, const Picture *pic);
 
 #endif

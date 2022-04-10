@@ -6,7 +6,7 @@
 //-----------------------------------------------
 
 extern const Picture background; // A 240x320 background image
-extern const Picture ball; // A 19x19 purple ball with white boundaries
+extern const Picture blade; // A 5x5 "ball" image
 
 // Copy a subset of a large source picture into a smaller destination.
 // sx,sy are the offset into the source picture.
@@ -64,36 +64,19 @@ void pic_overlay(Picture *dst, int xoffset, int yoffset, const Picture *src, int
 // A 100x100 picture uses 20000 bytes.  You have 32768 bytes of SRAM.
 #define TempPicturePtr(name,width,height) Picture name[(width)*(height)/6+2] = { {width,height,2} }
 
+//Erase a 5x5 square of pixels at the coordinates specified
 void erase(int x, int y)
 {
-    TempPicturePtr(tmp,29,29); // Create a temporary 29x29 image.
+    TempPicturePtr(tmp,5,5); // Create a temporary 5x5 image.
     pic_subset(tmp, &background, x-tmp->width/2, y-tmp->height/2); // Copy the background
-    //pic_overlay(tmp, 5,5, &ball, 0xffff); // Overlay the ball
     LCD_DrawPicture(x-tmp->width/2,y-tmp->height/2, tmp); // Draw
 }
 
-void update(int x, int y)
-{
-    LCD_DrawPicture(x-ball.width/2,y-ball.height/2, &ball); // Draw the ball
-}
-
+//Update the displayed position of the blade at the coordinates specified
 void update2(int x, int y)
 {
-    TempPicturePtr(tmp,29,29); // Create a temporary 29x29 image.
+    TempPicturePtr(tmp,5,5); // Create a temporary 29x29 image.
     pic_subset(tmp, &background, x-tmp->width/2, y-tmp->height/2); // Copy the background
-    pic_overlay(tmp, 5,5, &ball, 0xffff); // Overlay the ball
+    pic_overlay(tmp, 0,0, &blade, 0xffff); // Overlay the ball
     LCD_DrawPicture(x-tmp->width/2,y-tmp->height/2, tmp); // Draw
-}
-
-void basic_drawing(void)
-{
-    LCD_Clear(0);
-    LCD_DrawRectangle(10, 10, 30, 50, GREEN);
-    LCD_DrawFillRectangle(50, 10, 70, 50, BLUE);
-    LCD_DrawLine(10, 10, 70, 50, RED);
-    LCD_Circle(50, 90, 40, 1, CYAN);
-    LCD_DrawTriangle(90,10, 120,10, 90,30, YELLOW);
-    LCD_DrawFillTriangle(90,90, 120,120, 90,120, GRAY);
-    LCD_DrawFillRectangle(10, 140, 120, 159, WHITE);
-    LCD_DrawString(20,141, BLACK, WHITE, "Test string!", 16, 0); // opaque background
 }
