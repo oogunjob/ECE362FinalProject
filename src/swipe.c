@@ -4,8 +4,10 @@
 #include "oled.h"
 #define SCREEN_HEIGHT 320
 #define SCREEN_WIDTH  240
-#define VECTOR_SIZE 10
+#define VECTOR_SIZE 15
 
+//A vector to be externally available to main
+//Holds VECTOR_SIZE entries of the most recent points
 Point vector[VECTOR_SIZE];
 
 //-----------------------------------------------

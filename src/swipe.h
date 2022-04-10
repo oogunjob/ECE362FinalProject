@@ -2,7 +2,6 @@
 #define __SWIPE_H
 #define SCREEN_HEIGHT 320
 #define SCREEN_WIDTH  240
-#define VECTOR_SIZE 10
 
 typedef struct {
     int x;

@@ -2,6 +2,9 @@
 #include <stdio.h>
 #include "oled.h"
 
+//NOTE: This is strictly used for debugging purposes. It serves no real purpose
+//during presented game-play
+
 //-----------------------------------------------
 //                INITIALIZATIONS
 //-----------------------------------------------

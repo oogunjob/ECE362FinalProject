@@ -2,24 +2,31 @@
 #include <stdio.h>
 #include "swipe.h"
 #include "oled.h"
+#include "graphics.h"
 #define SCREEN_HEIGHT 320
 #define SCREEN_WIDTH  240
-#define VECTOR_SIZE 10
+#define VECTOR_SIZE 15
 
 extern Point vector[VECTOR_SIZE];
+extern const Picture background; // A 240x320 background image
+int count = 0; //Simple counter used to determine how many times vector updated
 
 //NOTES:
 //Screen Dims: 240 x 320
-//TIM6 for DAC/DMA (NO ISR for DAC)
+//TIM6 for DAC/DMA (NO ISR for DAC, needs to run at highest priority)
 //TIM3 for read_x() and read_y() (which use ADC channels 8 and 9)
 //OLED display functions in oled.h/oled.c
 //Swipe mechanics and storage functions in swipe.h/swipe.c
+//Graphics for output logic to LCD in graphics.c/graphics.h
+//Actual graphical representations of objects in named .c files (e.g. background.c)
+//LCD interfacing in lcd.c/lcd.h (DO NOT ALTER ANYTHING IN THESE)
 
 //TO-DO:
 //--Setup DAC
-//--Setup game physics and graphics
-//--Update only center of the fruit during motion, count as "cut"
-//  if swipe is within a specified tolerance of the center. This way,
+//--Setup game physics and fruit/bomb target graphics (background and blade
+//  already set up)
+//--Update only center of the fruit during motion, and count as "cut"
+//  if swipe is within a specified tolerance (radius) of the center. This way,
 //  no need to keep track of fruit borders
 //--Attempt to use integer math for fruit trajectory (if not possible,
 //  then use fixed-point)
@@ -34,7 +41,7 @@ void nano_wait(unsigned int n);
 //                 INITIALIZATIONS
 //-----------------------------------------------
 
-//Initialize the TIM3 ISR for reading the x and y coordinates
+//Initialize the TIM3 ISR for reading the x and y coordinates and animating swipes
 void init_tim3() {
     RCC -> APB1ENR |= RCC_APB1ENR_TIM3EN;
     TIM3 -> PSC = 120-1;
@@ -48,24 +55,47 @@ void init_tim3() {
 //                TIMERS/ISR
 //-----------------------------------------------
 
-//ISR for reading x and y analog coords
+//ISR for reading x and y analog coords, storing the Point struct containing
+//x and y into a global vector, and using update2() and erase() to animate
+//the "blade" and its trajectory
+//Note: The tail is best visible/clean when using a stylus instead of finger
+
+//RECOMMENDATION: Put some logic in here flagging a (0,0) touch as invalid for
+//a swipe, and otherwise flag a (x,y) touch within the bounds (240,320) as valid
+//(Otherwise, any fruit entering near (0,0) would be sliced even if not touching
+//the screen)
 void TIM3_IRQHandler() {
     TIM3 -> SR &= ~TIM_SR_UIF;
     //Read x coordinate and output resulting pixel to SPI OLED
     int x_pixel = read_x();
-    nano_wait(500000);  //500 us between reads
 
     //Read y coordinate and output resulting pixel to SPI OLED
     int y_pixel = read_y();
-    nano_wait(500000);  //500 us between reads
 
-    Point temp = {.x = x_pixel, .y = y_pixel};
-    shift_into_vector(temp);
 
-    //Expect to see this created temp point as first vector entry
+    //If screen detects a valid touch
+    if(!(x_pixel == 0 || y_pixel == 0)) {
+        Point temp = {.x = x_pixel, .y = y_pixel};
+        if(count >= VECTOR_SIZE) {
+            for(int i = VECTOR_SIZE - 1; i >= 0; i--)
+                erase(SCREEN_WIDTH - vector[i].x, vector[i].y);
+            count = 0;
+        }
+        //Shift new point into index 0 of the vector, increment point count
+        shift_into_vector(temp);
+        count++;
+        update2(SCREEN_WIDTH - x_pixel, y_pixel);
+    }
+    //If nothing is touching the screen, or stylus went out-of-bounds
+    else {
+        //Only erase everything in the vector. No need to update vector with
+        //a 0-valued coordinate, increment count, or update blade position.
+        for(int i = VECTOR_SIZE - 1; i >= 0; i--)
+            erase(SCREEN_WIDTH - vector[i].x, vector[i].y);
+    }
 
 //DEBUGGING AND VERIFICATION----------------------------------------------------
-    //Print this first vector entry
+    //Print this first vector entry to OLED
 
 #define TEST_FIRST
 #ifdef TEST_FIRST
@@ -78,7 +108,7 @@ void TIM3_IRQHandler() {
 
 //#define TEST_X
 #ifdef TEST_X
-    //Print x values of entire vector
+    //Print x values of entire vector to OLED
     char string[21];
     snprintf(string, 21, "X%03d %03d %03d %03d %03d", vector[0].x, vector[1].x,
              vector[2].x, vector[3].x, vector[4].x);
@@ -90,7 +120,7 @@ void TIM3_IRQHandler() {
 
 //#define TEST_Y
 #ifdef TEST_Y
-    //Print y values of entire vector
+    //Print y values of entire vector to OLED
 
     char string[21];
     snprintf(string, 21, "Y%03d %03d %03d %03d %03d", vector[0].y, vector[1].y,
@@ -101,18 +131,22 @@ void TIM3_IRQHandler() {
     spi1_display2(string);
 #endif
     //--------------------------------------------------------------------------
-
 }
 
 //-----------------------------------------------
 //                MISCELLANEOUS
 //-----------------------------------------------
 
+
 int main() {
+    LCD_Setup(); // this will call init_lcd_spi()
+    //Draw background with upper left corner at (0,0)
+    LCD_DrawPicture(0,0,&background);
     init_adc();
     init_spi1();
     spi1_init_oled();
     init_reads();
+    //init_tim3() is ALWAYS the last call in main
     init_tim3();
     for(;;)
         ;
