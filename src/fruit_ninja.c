@@ -15,36 +15,33 @@
  */
 
 int playerLives = 3; // number of players lives
-int score = 0        // current score
-            const char *
-            fruits[NUM_FRUITS] = {"apple", "watermelon", "orange", "banana", "bomb"}; // fruits and bomb that will be used for the game
-Fruit *fruits = NULL;                                                                 // linked list that stores all of the fruits that will be displayed in the game
+int score = 0; // current score
+const char * fruits[NUM_FRUITS] = {"apple", "watermelon", "orange", "banana", "bomb"}; // fruits and bomb that will be used for the game
+Fruit *fruits = NULL; // linked list that stores all of the fruits that will be displayed in the game
 
 /* ===================================================================================
  * Linked List Functions
  * ===================================================================================
  */
 
-void push(Fruit **head, Fruit *fruit)
-{
+void push(Fruit **head, Fruit *fruit){
 
     /* link the old list off the new node */
-    fruit->next = (*head);
+    fruit -> next = (*head);
 
     /* move the head to point to the new node */
     (*head) = fruit;
 }
 
-Fruit *search(Fruit *head, char *name)
-{
+Fruit *search(Fruit *head, char *name){
     Fruit *current = head; // Initialize current node
 
     // searches through linked list to see if the fruit with same name already exists
-    while (current != NULL)
-    {
+    while (current != NULL){
         // if the fruit is already in the linked list, return the node
         if (current->name == name)
             return current;
+
         current = current->next;
     }
     return NULL;
@@ -62,19 +59,16 @@ Fruit *search(Fruit *head, char *name)
  * ===================================================================================
  */
 
-void generateFruits(char *name)
-{
+void generateFruits(char *name){
     bool new_fruit = true;               // indication of wheter or not a new fruit needs to be added to the list
     Fruit *fruit = search(fruits, name); // searches for fruit in the list
 
     // checks if the fruit is not already in the list
-    if (fruit == NULL)
-    {
+    if (fruit == NULL){
         // allocates space for the fruit
         fruit = malloc(sizeof(*fruit));
     }
-    else
-    {
+    else{
         // indicates that the fruit does not need to be added back to list after initialization
         new_fruit = false;
     }
@@ -84,10 +78,10 @@ void generateFruits(char *name)
 
     // initalization of the fruit
     fruit->name = name;
-    fruit->image =                                         // TODO: Need to assign the original image here
-        fruit->x = (rand() % (HEIGHT - 100 + 1)) + 100;    // create a random x value between 100 and HEIGHT
-    fruit->y = WIDTH;                                      // uses the display width of y
-    fruit->x_speed = (rand() % (10 - (-10) + 1)) + (-10);  // create a random speed here between -10 and 10
+    fruit->image = XXX; // TODO: Need to assign the original image here
+    fruit->x = (rand() % (HEIGHT - 100 + 1)) + 100; // create a random x value between 100 and HEIGHT
+    fruit->y = WIDTH; // uses the display width of y
+    fruit->x_speed = (rand() % (10 - (-10) + 1)) + (-10); // create a random speed here between -10 and 10
     fruit->y_speed = (rand() % (-60 - (-80) + 1)) + (-80); // create a random speed here -80 and -60
     fruit->throw = false;
     fruit->t = 0;
@@ -96,18 +90,15 @@ void generateFruits(char *name)
 
     // Return the next random floating point number in the range [0.0, 1.0) to keep the fruits inside the gameDisplay
     // TODO: Check what this means
-    if (rand() >= 0.75)
-    {
+    if (rand() >= 0.75){
         fruit->throw = true;
     }
-    else
-    {
+    else{
         fruit->throw = false;
     }
 
     // adds the new fruit to the list if it was new
-    if (new_fruit == true)
-    {
+    if (new_fruit == true){
         push(&fruits, fruit);
     }
 
@@ -151,7 +142,7 @@ void fruit_ninja(){
             // Use what Bailey said and change it to draw a black box over the image lives
             // draw_lives(gameDisplay, 690, 5, player_lives, 'images/red_lives.png');
 
-            score = 0 // updates the score back to 0
+            score = 0; // updates the score back to 0
         }
 
         // TODO: Need some way to check whenever the game is over
@@ -174,10 +165,10 @@ void fruit_ninja(){
 
             // checks if the fruit should be thrown
             if ((current_fruit->throw) == true){
-                current_fruit -> x += current_fruit -> x_speed; // increases the fruits x coordinate by x_speed
-                current_fruit->y += current_fruit->y_speed;         // increases the fruits y coorindate by y_speed
-                current_fruit->y_speed += (1 * current_fruit->t)    // changes the y-trajectory of the fruit
-                current_fruit->t += 1;    // changes the trajectory speed for the next iteration
+                current_fruit->x += current_fruit->x_speed;       // increases the fruits x coordinate by x_speed
+                current_fruit->y += current_fruit->y_speed;       // increases the fruits y coorindate by y_speed
+                current_fruit->y_speed += (1 * current_fruit->t); // changes the y-trajectory of the fruit
+                current_fruit->t += 1;                            // changes the trajectory speed for the next iteration
 
                 if (current_fruit->y <= WIDTH){
                     // TODO: Display the fruit
@@ -186,7 +177,7 @@ void fruit_ninja(){
                 }
                 else{
                     // generates a fruit with random attributes
-                    generateFruits(fruit->name);
+                    generateFruits(current_fruit->name);
                 }
 
                 // TODO: Include the X and Y position of the fruit
@@ -198,10 +189,10 @@ void fruit_ninja(){
                 int User_Y;
 
                 // checks if the player has made contact with a fruit or bomb
-                if (!(fruit->hit) && (User_X > fruit->x) && (User_X < (fruit->x) + 60) && (User_Y > (fruit->y)) && (User_Y < (fruit->y) + 60)){
+                if (!(current_fruit->hit) && (User_X > current_fruit->x) && (User_X < (current_fruit->x) + 60) && (User_Y > (current_fruit->y)) && (User_Y < (current_fruit->y) + 60)){
 
                     // checks if the object hit was a bomb
-                    if (fruit->name == 'bomb'){
+                    if (current_fruit->name == 'bomb'){
 
                         // user loses a life if a bomb is swiped
                         playerLives = playerLives - 1;
@@ -209,18 +200,18 @@ void fruit_ninja(){
                         // checks if the player has no more lives
                         if (!playerLives){
                             // convers up all remaining lives
-                            hide_cross_lives(690, 15)
+                            hide_cross_lives(690, 15);
                         }
 
                         // checks if the player only has one life
                         else if (playerLives == 1){
                             // covers up the other two lives
-                            hide_cross_lives(725, 15)
+                            hide_cross_lives(725, 15);
                         }
 
                         else if (playerLives == 2){
                             // overs up one life
-                            hide_cross_lives(760, 15)
+                            hide_cross_lives(760, 15);
                         }
 
                         // if the user clicks bombs for three time, GAME OVER message should be displayed and the window should be reset
@@ -238,31 +229,32 @@ void fruit_ninja(){
                     else{
                         // TODO Need to change this to open whichever image it was when the fruit gets cut
                         // updates a new imgage for the fruit after explosion
-                        new_image = "images/" + "half_" + fruit->name + ".png";
+                        new_image = "images/" + "half_" + current_fruit->name + ".png";
                     }
 
-                // updates the fruit's new image after being swiped along with the speed in the x direction
-                fruit->image = new_image;
-                fruit->x_speed += 10;
+                    // updates the fruit's new image after being swiped along with the speed in the x direction
+                    current_fruit->image = new_image;
+                    current_fruit->x_speed += 10;
 
-                if (fruit->name == 'bomb'){
-                    // updates the score if the fruit swiped was NOT a bomb
-                    score += 1;
+                    if (current_fruit->name == 'bomb'){
+                        // updates the score if the fruit swiped was NOT a bomb
+                        score += 1;
+                    }
+
+                    // TODO: Update the score here
+                    //  UpdateScore();
+
+                    // indication that the fruit has been hit already
+                    current_fruit -> hit = true;
+                }
+                else{
+                    // generates new fruit
+                    generateFruits(current_fruit->name);
                 }
 
-                // TODO: Update the score here
-                //  UpdateScore();
-
-                // indication that the fruit has been hit already
-                fruit->hit = true;
+                // chooses the next fruit to be displayed
+                current_fruit = current_fruit->next;
             }
-            else{
-                // generates new fruit
-                generateFruits(fruit->name);
-            }
-
-            // chooses the next fruit to be displayed
-            current_fruit = current_fruit->next;
         }
     }
 }
