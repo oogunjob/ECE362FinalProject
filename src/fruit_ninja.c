@@ -16,7 +16,7 @@
 
 int playerLives = 3; // number of players lives
 int score = 0; // current score
-const char * fruits[NUM_FRUITS] = {"apple", "watermelon", "orange", "banana", "bomb"}; // fruits and bomb that will be used for the game
+const char * fruits_names[NUM_FRUITS] = {"apple", "watermelon", "orange", "banana", "bomb"}; // fruits and bomb that will be used for the game
 Fruit *fruits = NULL; // linked list that stores all of the fruits that will be displayed in the game
 
 /* ===================================================================================
@@ -33,13 +33,13 @@ void push(Fruit **head, Fruit *fruit){
     (*head) = fruit;
 }
 
-Fruit *search(Fruit *head, char *name){
+Fruit *search(Fruit *head, const char *name){
     Fruit *current = head; // Initialize current node
 
     // searches through linked list to see if the fruit with same name already exists
     while (current != NULL){
         // if the fruit is already in the linked list, return the node
-        if (current->name == name)
+        if (current -> name == name)
             return current;
 
         current = current->next;
@@ -53,13 +53,15 @@ Fruit *search(Fruit *head, char *name){
  * ===================================================================================
  */
 
+    //TODO: Need to add them here
+
 /* ===================================================================================
  * Fruit Generation
- * Used for calculating where a certain fruit will be displayed on game board
+ * Used for calculating where a certain fruit will be displayed on game board and assigning attributes
  * ===================================================================================
  */
 
-void generateFruits(char *name){
+void generateFruits(const char *name){
     bool new_fruit = true;               // indication of wheter or not a new fruit needs to be added to the list
     Fruit *fruit = search(fruits, name); // searches for fruit in the list
 
@@ -73,28 +75,25 @@ void generateFruits(char *name){
         new_fruit = false;
     }
 
-    // TODO: still need to make sure that this value is seeded correctly
-    srand(time(NULL)); // seeds the random number generator
-
     // initalization of the fruit
-    fruit->name = name;
-    fruit->image = XXX; // TODO: Need to assign the original image here
-    fruit->x = (rand() % (HEIGHT - 100 + 1)) + 100; // create a random x value between 100 and HEIGHT
-    fruit->y = WIDTH; // uses the display width of y
-    fruit->x_speed = (rand() % (10 - (-10) + 1)) + (-10); // create a random speed here between -10 and 10
-    fruit->y_speed = (rand() % (-60 - (-80) + 1)) + (-80); // create a random speed here -80 and -60
-    fruit->throw = false;
-    fruit->t = 0;
-    fruit->hit = false;
-    fruit->next = NULL;
+    fruit -> name = name;
+    fruit -> image = "placeholder"; // TODO: Need to assign the original image here
+    fruit -> x = (rand() % (HEIGHT - 100 + 1)) + 100; // create a random x value between 100 and HEIGHT
+    fruit -> y = WIDTH; // uses the display width of y
+    fruit -> x_speed = (rand() % (10 - (-10) + 1)) + (-10); // create a random speed here between -10 and 10
+    fruit -> y_speed = (rand() % (-60 - (-80) + 1)) + (-80); // create a random speed here -80 and -60
+    fruit -> throw = false;
+    fruit -> t = 0;
+    fruit -> hit = false;
+    fruit -> next = NULL;
 
     // Return the next random floating point number in the range [0.0, 1.0) to keep the fruits inside the gameDisplay
     // TODO: Check what this means
     if (rand() >= 0.75){
-        fruit->throw = true;
+        fruit -> throw = true;
     }
     else{
-        fruit->throw = false;
+        fruit -> throw = false;
     }
 
     // adds the new fruit to the list if it was new
@@ -111,9 +110,12 @@ void generateFruits(char *name){
  */
 void fruit_ninja(){
 
+    // seeds the random number generator
+    srand(time(NULL));
+    
     // generates the fruit attributes that will be used for the game
     for (int i = 0; i < NUM_FRUITS; i++){
-        generateFruits(fruits[i]);
+        generateFruits(fruits_names[i]);
     }
 
     bool firstRound = true;
@@ -164,20 +166,20 @@ void fruit_ninja(){
         while (current_fruit != NULL){
 
             // checks if the fruit should be thrown
-            if ((current_fruit->throw) == true){
-                current_fruit->x += current_fruit->x_speed;       // increases the fruits x coordinate by x_speed
-                current_fruit->y += current_fruit->y_speed;       // increases the fruits y coorindate by y_speed
-                current_fruit->y_speed += (1 * current_fruit->t); // changes the y-trajectory of the fruit
-                current_fruit->t += 1;                            // changes the trajectory speed for the next iteration
+            if ((current_fruit -> throw) == true){
+                current_fruit -> x += current_fruit -> x_speed;       // increases the fruits x coordinate by x_speed
+                current_fruit -> y += current_fruit -> y_speed;       // increases the fruits y coorindate by y_speed
+                current_fruit -> y_speed += (1 * current_fruit->t); // changes the y-trajectory of the fruit
+                current_fruit -> t += 1;                            // changes the trajectory speed for the next iteration
 
-                if (current_fruit->y <= WIDTH){
+                if (current_fruit -> y <= WIDTH){
                     // TODO: Display the fruit
                     // gameDisplay.blit(value['img'], (value['x'], value['y']))    #displaying the fruit inside screen dynamically
                     printf("\n"); // place holder
                 }
                 else{
                     // generates a fruit with random attributes
-                    generateFruits(current_fruit->name);
+                    generateFruits(current_fruit -> name);
                 }
 
                 // TODO: Include the X and Y position of the fruit
@@ -189,10 +191,10 @@ void fruit_ninja(){
                 int User_Y;
 
                 // checks if the player has made contact with a fruit or bomb
-                if (!(current_fruit->hit) && (User_X > current_fruit->x) && (User_X < (current_fruit->x) + 60) && (User_Y > (current_fruit->y)) && (User_Y < (current_fruit->y) + 60)){
+                if (!(current_fruit -> hit) && (User_X > current_fruit -> x) && (User_X < (current_fruit -> x) + 60) && (User_Y > (current_fruit -> y)) && (User_Y < (current_fruit -> y) + 60)){
 
                     // checks if the object hit was a bomb
-                    if (current_fruit->name == 'bomb'){
+                    if (current_fruit -> name == 'bomb'){
 
                         // user loses a life if a bomb is swiped
                         playerLives = playerLives - 1;
@@ -229,14 +231,14 @@ void fruit_ninja(){
                     else{
                         // TODO Need to change this to open whichever image it was when the fruit gets cut
                         // updates a new imgage for the fruit after explosion
-                        new_image = "images/" + "half_" + current_fruit->name + ".png";
+                        new_image = "images/" + "half_" + current_fruit->name + ".png"; //TODO: Need to fix this
                     }
 
                     // updates the fruit's new image after being swiped along with the speed in the x direction
-                    current_fruit->image = new_image;
-                    current_fruit->x_speed += 10;
+                    current_fruit -> image = new_image;
+                    current_fruit -> x_speed += 10;
 
-                    if (current_fruit->name == 'bomb'){
+                    if (current_fruit -> name == 'bomb'){
                         // updates the score if the fruit swiped was NOT a bomb
                         score += 1;
                     }
@@ -249,11 +251,11 @@ void fruit_ninja(){
                 }
                 else{
                     // generates new fruit
-                    generateFruits(current_fruit->name);
+                    generateFruits(current_fruit -> name);
                 }
 
                 // chooses the next fruit to be displayed
-                current_fruit = current_fruit->next;
+                current_fruit = current_fruit -> next;
             }
         }
     }

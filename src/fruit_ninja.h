@@ -2,10 +2,9 @@
 #define __FRUIT_NINJA_H__
 
 #include <stdbool.h>
-#include "lcd.h"
 
 typedef struct fruit {
-  char * name;
+  const char * name;
   char* image;
   int x;
   int y;
@@ -17,13 +16,10 @@ typedef struct fruit {
   struct fruit * next;
 } Fruit;
 
-
-// FUNCTION DECLARATIONS HERE
-void generateFruits(char* fruit);
+void generateFruits(const char* name);
 void fruit_ninja();
 
-
 void push(Fruit** head, Fruit* fruit);
-Fruit* search(Fruit* head, char* name);
+Fruit* search(Fruit* head, const char* name);
 
 #endif
