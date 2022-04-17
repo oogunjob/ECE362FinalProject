@@ -125,11 +125,11 @@ int convert_coord(float coord, char dim) {
 //Y: 320:227 == 1.410 <-- (trial and error value)
 
     //Return, having accounted for voltage off screen
-    //Setup coordinate plane such that origin is at LL corner of screen
+    //Setup coordinate plane such that origin is at upper right corner of screen
     if(dim == 'y')
         return 1.41 * value;
     else
-        return SCREEN_WIDTH - (1.08 * value);
+        return 1.08 * value;
 }
 
 //Shift Point object into front of vector buffer for continual update of point location

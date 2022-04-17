@@ -3,6 +3,7 @@
 #include "swipe.h"
 #include "oled.h"
 #include "graphics.h"
+#include "fruit.h"
 #define SCREEN_HEIGHT 320
 #define SCREEN_WIDTH  240
 #define VECTOR_SIZE 15
@@ -14,6 +15,7 @@
 
 extern Point vector[VECTOR_SIZE];
 extern const Picture background; // A 240x320 background image
+extern const Picture blade;
 extern const Picture melon; // A 60x60 image of a melon
 extern const Picture lemon; // A 50x50 image of a lemon
 extern const Picture grape; // A 40x40 image of a grape
@@ -23,9 +25,29 @@ extern const Picture lemon_cut; // A 50x50 image of a lemon, cut in half
 extern const Picture grape_cut; // A 40x40 image of a grape, cut in half
 extern const Picture apple_cut; // A 50x50 image of an apple, cut in half
 int count = 0; //Simple counter used to determine how many times vector updated
+int meloncut = 0;
+int lemoncut = 0;
+int grapecut = 0;
+int applecut = 0;
+int test_cut_melon(int is_cut);
+int test_cut_lemon(int is_cut);
+int test_cut_grape(int is_cut);
+int test_cut_apple(int is_cut);
+
 
 //NOTES:
 //Screen Dims: 240 x 320
+
+//VISUALIZATION
+
+//         TOP OF SCREEN
+//(0,320)-----------------(0,0)
+//-----------------------------
+//-----------------------------
+//-----------------------------
+//-----------------------------
+//(240,320)-------------(240,0)
+
 //TIM6 for DAC/DMA (NO ISR for DAC, needs to run at highest priority)
 //TIM3 for read_x() and read_y() (which use ADC channels 8 and 9)
 //OLED display functions in oled.h/oled.c
@@ -33,9 +55,6 @@ int count = 0; //Simple counter used to determine how many times vector updated
 //Graphics for output logic to LCD in graphics.c/graphics.h
 //Actual graphical representations of objects in named .c files (e.g. background.c)
 //LCD interfacing in lcd.c/lcd.h (DO NOT ALTER ANYTHING IN THESE)
-
-//FOR ANY GRAPHICAL DISPLAY: X coord: SCREEN_WIDTH - (desired pos.)
-//                           Y coord: desired pos.
 
 //TO-DO:
 //--Setup DAC
@@ -75,11 +94,6 @@ void init_tim3() {
 //x and y into a global vector, and using update2() and erase() to animate
 //the "blade" and its trajectory
 //Note: The tail is best visible/clean when using a stylus instead of finger
-
-//RECOMMENDATION: Put some logic in here flagging a (0,0) touch as invalid for
-//a swipe, and otherwise flag a (x,y) touch within the bounds (240,320) as valid
-//(Otherwise, any fruit entering near (0,0) would be sliced even if not touching
-//the screen)
 void TIM3_IRQHandler() {
     TIM3 -> SR &= ~TIM_SR_UIF;
     //Read x coordinate and output resulting pixel to SPI OLED
@@ -94,20 +108,24 @@ void TIM3_IRQHandler() {
         Point temp = {.x = x_pixel, .y = y_pixel};
         if(count >= VECTOR_SIZE) {
             for(int i = VECTOR_SIZE - 1; i >= 0; i--)
-                erase(SCREEN_WIDTH - vector[i].x, vector[i].y);
+                erase(vector[i].x, vector[i].y);
             count = 0;
         }
         //Shift new point into index 0 of the vector, increment point count
         shift_into_vector(temp);
         count++;
-        update2(SCREEN_WIDTH - x_pixel, y_pixel);
+        update2(x_pixel, y_pixel);
+        meloncut = test_cut_melon(meloncut);
+        lemoncut = test_cut_lemon(lemoncut);
+        grapecut = test_cut_grape(grapecut);
+        applecut = test_cut_apple(applecut);
     }
     //If nothing is touching the screen, or stylus went out-of-bounds
     else {
         //Only erase everything in the vector. No need to update vector with
         //a 0-valued coordinate, increment count, or update blade position.
         for(int i = VECTOR_SIZE - 1; i >= 0; i--)
-            erase(SCREEN_WIDTH - vector[i].x, vector[i].y);
+            erase(vector[i].x, vector[i].y);
     }
 
 //DEBUGGING AND VERIFICATION----------------------------------------------------
@@ -156,67 +174,151 @@ void test_draw_melon() {
     //Draw melon
     TempPicturePtr(tmp,MELON_RADIUS*2,MELON_RADIUS*2);
     pic_subset(tmp, &background, SCREEN_WIDTH-120, 240); // Copy the background
-    pic_overlay(&tmp,0,0,&melon,000); //Overlay transparent pixels that are color \000
-    LCD_DrawPicture(SCREEN_WIDTH-120,240,&tmp); //Draw new temporary picture
+    pic_overlay(tmp,0,0,&melon,000); //Overlay transparent pixels that are color \000
+    LCD_DrawPicture(SCREEN_WIDTH-120,240,tmp); //Draw new temporary picture
 
     //Draw cut melon
     TempPicturePtr(tmp2,MELON_RADIUS*2,MELON_RADIUS*2);
     pic_subset(tmp2, &background, SCREEN_WIDTH-180, 240); // Copy the background
-    pic_overlay(&tmp2,0,0,&melon_cut,000); //Overlay transparent pixels that are color \000
-    LCD_DrawPicture(SCREEN_WIDTH-180,240,&tmp2); //Draw new temporary picture
+    pic_overlay(tmp2,0,0,&melon_cut,000); //Overlay transparent pixels that are color \000
+    LCD_DrawPicture(SCREEN_WIDTH-180,240,tmp2); //Draw new temporary picture
 }
 
 void test_draw_lemon() {
-    //Draw melon
+    //Draw lemon
     TempPicturePtr(tmp,LEMON_RADIUS*2,LEMON_RADIUS*2);
     pic_subset(tmp, &background, SCREEN_WIDTH-120, 180); // Copy the background
-    pic_overlay(&tmp,0,0,&lemon,000); //Overlay transparent pixels that are color \000
-    LCD_DrawPicture(SCREEN_WIDTH-120,180,&tmp); //Draw new temporary picture
+    pic_overlay(tmp,0,0,&lemon,000); //Overlay transparent pixels that are color \000
+    LCD_DrawPicture(SCREEN_WIDTH-120,180,tmp); //Draw new temporary picture
 
-    //Draw cut melon
+    //Draw cut lemon
     TempPicturePtr(tmp2,LEMON_RADIUS*2,LEMON_RADIUS*2);
     pic_subset(tmp2, &background, SCREEN_WIDTH-180, 180); // Copy the background
-    pic_overlay(&tmp2,0,0,&lemon_cut,000); //Overlay transparent pixels that are color \000
-    LCD_DrawPicture(SCREEN_WIDTH-180,180,&tmp2); //Draw new temporary picture
+    pic_overlay(tmp2,0,0,&lemon_cut,000); //Overlay transparent pixels that are color \000
+    LCD_DrawPicture(SCREEN_WIDTH-180,180,tmp2); //Draw new temporary picture
 }
 
 void test_draw_grape() {
-    //Draw melon
+    //Draw grape
     TempPicturePtr(tmp,GRAPE_RADIUS*2,GRAPE_RADIUS*2);
     pic_subset(tmp, &background, SCREEN_WIDTH-120, 120); // Copy the background
-    pic_overlay(&tmp,0,0,&grape,000); //Overlay transparent pixels that are color \000
-    LCD_DrawPicture(SCREEN_WIDTH-120,120,&tmp); //Draw new temporary picture
+    pic_overlay(tmp,0,0,&grape,000); //Overlay transparent pixels that are color \000
+    LCD_DrawPicture(SCREEN_WIDTH-120,120,tmp); //Draw new temporary picture
 
-    //Draw cut melon
+    //Draw cut grape
     TempPicturePtr(tmp2,GRAPE_RADIUS*2,GRAPE_RADIUS*2);
     pic_subset(tmp2, &background, SCREEN_WIDTH-180, 120); // Copy the background
-    pic_overlay(&tmp2,0,0,&grape_cut,000); //Overlay transparent pixels that are color \000
-    LCD_DrawPicture(SCREEN_WIDTH-180,120,&tmp2); //Draw new temporary picture
+    pic_overlay(tmp2,0,0,&grape_cut,000); //Overlay transparent pixels that are color \000
+    LCD_DrawPicture(SCREEN_WIDTH-180,120,tmp2); //Draw new temporary picture
 }
 
 void test_draw_apple() {
-    //Draw melon
+    //Draw apple
     TempPicturePtr(tmp,APPLE_RADIUS*2,APPLE_RADIUS*2);
     pic_subset(tmp, &background, SCREEN_WIDTH-120, 60); // Copy the background
-    pic_overlay(&tmp,0,0,&apple,000); //Overlay transparent pixels that are color \000
-    LCD_DrawPicture(SCREEN_WIDTH-120,60,&tmp); //Draw new temporary picture
+    pic_overlay(tmp,0,0,&apple,000); //Overlay transparent pixels that are color \000
+    LCD_DrawPicture(SCREEN_WIDTH-120,60,tmp); //Draw new temporary picture
 
-    //Draw cut melon
+    //Draw cut apple
     TempPicturePtr(tmp2,APPLE_RADIUS*2,APPLE_RADIUS*2);
     pic_subset(tmp2, &background, SCREEN_WIDTH-180, 60); // Copy the background
-    pic_overlay(&tmp2,0,0,&apple_cut,000); //Overlay transparent pixels that are color \000
-    LCD_DrawPicture(SCREEN_WIDTH-180,60,&tmp2); //Draw new temporary picture
+    pic_overlay(tmp2,0,0,&apple_cut,000); //Overlay transparent pixels that are color \000
+    LCD_DrawPicture(SCREEN_WIDTH-180,60,tmp2); //Draw new temporary picture
 }
 
+int test_cut_melon(int is_cut) {
+    Point center = {.x = (SCREEN_WIDTH-120+MELON_RADIUS), .y = 240+MELON_RADIUS};
+    Fruit fr = {.center = center, .type = 'm'};
+    is_cut = isCut(fr, vector[0]);
+    if(is_cut == 0) {
+        //Draw melon
+        TempPicturePtr(tmp,MELON_RADIUS*2,MELON_RADIUS*2);
+        pic_subset(tmp, &background, SCREEN_WIDTH-120, 240); // Copy the background
+        pic_overlay(tmp,0,0,&melon,000); //Overlay transparent pixels that are color \000
+        LCD_DrawPicture(SCREEN_WIDTH-120,240,tmp); //Draw new temporary picture
+    }
+    else {
+        //Draw cut melon
+        TempPicturePtr(tmp2,MELON_RADIUS*2,MELON_RADIUS*2);
+        pic_subset(tmp2, &background, SCREEN_WIDTH-120, 240); // Copy the background
+        pic_overlay(tmp2,0,0,&melon_cut,000); //Overlay transparent pixels that are color \000
+        LCD_DrawPicture(SCREEN_WIDTH-120,240,tmp2); //Draw new temporary picture
+    }
+    return is_cut;
+}
+
+int test_cut_lemon(int is_cut) {
+    Point center = {.x = (SCREEN_WIDTH-120+LEMON_RADIUS), .y = 180+LEMON_RADIUS};
+    Fruit fr = {.center = center, .type = 'l'};
+    is_cut = isCut(fr, vector[0]);
+    if(is_cut == 0) {
+        //Draw lemon
+        TempPicturePtr(tmp,LEMON_RADIUS*2,LEMON_RADIUS*2);
+        pic_subset(tmp, &background, SCREEN_WIDTH-120, 180); // Copy the background
+        pic_overlay(tmp,0,0,&lemon,000); //Overlay transparent pixels that are color \000
+        LCD_DrawPicture(SCREEN_WIDTH-120,180,tmp); //Draw new temporary picture
+    }
+    else {
+        //Draw cut lemon
+        TempPicturePtr(tmp2,LEMON_RADIUS*2,LEMON_RADIUS*2);
+        pic_subset(tmp2, &background, SCREEN_WIDTH-120, 180); // Copy the background
+        pic_overlay(tmp2,0,0,&lemon_cut,000); //Overlay transparent pixels that are color \000
+        LCD_DrawPicture(SCREEN_WIDTH-120,180,tmp2); //Draw new temporary picture
+    }
+    return is_cut;
+}
+
+int test_cut_grape(int is_cut) {
+    Point center = {.x = (SCREEN_WIDTH-120+GRAPE_RADIUS), .y = 120+GRAPE_RADIUS};
+    Fruit fr = {.center = center, .type = 'g'};
+    is_cut = isCut(fr, vector[0]);
+    if(is_cut == 0) {
+        //Draw grape
+        TempPicturePtr(tmp,GRAPE_RADIUS*2,GRAPE_RADIUS*2);
+        pic_subset(tmp, &background, SCREEN_WIDTH-120, 120); // Copy the background
+        pic_overlay(tmp,0,0,&grape,000); //Overlay transparent pixels that are color \000
+        LCD_DrawPicture(SCREEN_WIDTH-120,120,tmp); //Draw new temporary picture
+    }
+    else {
+        //Draw cut grape
+        TempPicturePtr(tmp2,GRAPE_RADIUS*2,GRAPE_RADIUS*2);
+        pic_subset(tmp2, &background, SCREEN_WIDTH-120, 120); // Copy the background
+        pic_overlay(tmp2,0,0,&grape_cut,000); //Overlay transparent pixels that are color \000
+        LCD_DrawPicture(SCREEN_WIDTH-120,120,tmp2); //Draw new temporary picture
+    }
+    return is_cut;
+}
+
+int test_cut_apple(int is_cut) {
+    Point center = {.x = (SCREEN_WIDTH-120+APPLE_RADIUS), .y = 60+APPLE_RADIUS};
+    Fruit fr = {.center = center, .type = 'a'};
+    is_cut = isCut(fr, vector[0]);
+    if(is_cut == 0) {
+        //Draw apple
+        TempPicturePtr(tmp,APPLE_RADIUS*2,APPLE_RADIUS*2);
+        pic_subset(tmp, &background, SCREEN_WIDTH-120, 60); // Copy the background
+        pic_overlay(tmp,0,0,&apple,000); //Overlay transparent pixels that are color \000
+        LCD_DrawPicture(SCREEN_WIDTH-120,60,tmp); //Draw new temporary picture
+    }
+    else {
+        //Draw cut apple
+        TempPicturePtr(tmp2,APPLE_RADIUS*2,APPLE_RADIUS*2);
+        pic_subset(tmp2, &background, SCREEN_WIDTH-120, 60); // Copy the background
+        pic_overlay(tmp2,0,0,&apple_cut,000); //Overlay transparent pixels that are color \000
+        LCD_DrawPicture(SCREEN_WIDTH-120,60,tmp2); //Draw new temporary picture
+    }
+    return is_cut;
+}
 
 int main() {
     LCD_Setup(); // this will call init_lcd_spi()
     //Draw background with upper left corner at (0,0)
     LCD_DrawPicture(0,0,&background);
-    test_draw_melon();
-    test_draw_lemon();
-    test_draw_grape();
-    test_draw_apple();
+    //test_draw_melon();
+    //test_draw_lemon();
+    //test_draw_grape();
+    //test_draw_apple();
+
 
     init_adc();
     init_spi1();
