@@ -11,7 +11,7 @@ void fruit_ninja();
 
 void push(Fruit** head, Fruit* fruit);
 Fruit* search(Fruit* head, const char name);
-int isCut(Fruit fr, Point swipe);
+int get_fruit_radius(char name);
 
 
 

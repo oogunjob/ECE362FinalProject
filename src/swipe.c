@@ -5,8 +5,12 @@
 #define SCREEN_HEIGHT 320
 #define SCREEN_WIDTH  240
 #define VECTOR_SIZE 15
+#define MELON_RADIUS 30 //Diameter of 60
+#define LEMON_RADIUS 25 //Diameter of 50
+#define GRAPE_RADIUS 20 //Diameter of 40
+#define APPLE_RADIUS 25 //Diameter of 50
 
-//A vector to be externally available to main
+//A vector to be externally available to other functions
 //Holds VECTOR_SIZE entries of the most recent points
 Point vector[VECTOR_SIZE];
 
@@ -138,4 +142,30 @@ void shift_into_vector(Point pt) {
         vector[i] = vector[i - 1];
     }
     vector[0] = pt;
+}
+
+int isCut(Fruit fr) {
+    int radius = 0;
+    int distSwipeX = 0;
+    int distSwipeY = 0;
+
+    switch(fr.name) {
+        case 'm' : radius = MELON_RADIUS;
+                            break;
+        case 'l' : radius = LEMON_RADIUS;
+                            break;
+        case 'g' : radius = GRAPE_RADIUS;
+                            break;
+        default  : radius = APPLE_RADIUS;
+    }
+    int distRad = radius*radius;
+    distSwipeX = (fr.x - vector[0].x) * (fr.x - vector[0].x);
+    distSwipeY = (fr.y - vector[0].y) * (fr.y - vector[0].y);
+
+    //Invalid swipe if vector[1] is 0 (swipe must have filled at least vector[1:0])
+    if(vector[1].x == 0 || vector[1].y == 0) {
+        return 0;
+    }
+
+    return distSwipeX < distRad && distSwipeY < distRad ? 1 : 0;
 }

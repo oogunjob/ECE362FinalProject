@@ -1,17 +1,23 @@
 #include <stdlib.h>
-#include <time.h>
-
 #include "stm32f0xx.h"
 #include "fruit_ninja.h"
 
 #define SCREEN_WIDTH 240
 #define SCREEN_HEIGHT 320
+#define VECTOR_SIZE 15
 #define FPS 12 // how often the game display refreshes // TODO: May not need this
 #define NUM_FRUITS 5
 #define MELON_RADIUS 30 //Diameter of 60
 #define LEMON_RADIUS 25 //Diameter of 50
 #define GRAPE_RADIUS 20 //Diameter of 40
 #define APPLE_RADIUS 25 //Diameter of 50
+#define BOMB_RADIUS  20 //Diameter of 40
+
+extern Point vector[VECTOR_SIZE];
+extern const Picture blade; // A 3x3 pixelated image to indicate where swipe is
+
+void nano_wait(unsigned int n);
+
 
 /* ===================================================================================
  * Global Variables
@@ -58,7 +64,15 @@ Fruit *search(Fruit *head, const char name){
  * ===================================================================================
  */
 
-    //TODO: Need to add them here
+int get_fruit_radius(char name) {
+    switch(name) {
+       case 'm':   return MELON_RADIUS;
+       case 'l':   return LEMON_RADIUS;
+       case 'g':   return GRAPE_RADIUS;
+       case 'a':   return APPLE_RADIUS;
+       default :   return BOMB_RADIUS;
+    }
+}
 
 /* ===================================================================================
  * Fruit Generation
@@ -83,19 +97,20 @@ void generateFruits(const char name){
     // initialization of the fruit
     fruit -> name = name;
     fruit -> image = 'n'; //'n' == not cut, indicates display function should show not cut image
-    fruit -> y = (rand() % (SCREEN_HEIGHT - 100 + 1)) + 100; // create a random y value between 100 and HEIGHT
+    fruit -> y = (random() % (SCREEN_HEIGHT - 100 + 1)) + 100; // create a random y value between 100 and HEIGHT
     fruit -> x = SCREEN_WIDTH; // uses the display width of x
-    fruit -> x_speed = (rand() % (10 - (-10) + 1)) + (-10); // create a random speed here between -10 and 10
-    fruit -> y_speed = (rand() % (-60 - (-80) + 1)) + (-80); // create a random speed here -80 and -60
+    fruit -> x_speed = (random() % (10 - (-10) + 1)) + (-10); // create a random speed here between -10 and 10
+    fruit -> y_speed = (random() % (-60 - (-80) + 1)) + (-80); // create a random speed here -80 and -60
     fruit -> throw = false;
     fruit -> t = 0;
     fruit -> hit = false;
     fruit -> next = NULL;
+    fruit -> rad = get_fruit_radius(name);
 
     // Return the next random floating point number in the range [0.0, 1.0) to keep the fruits inside the gameDisplay
     // This throw key indicates if the fruit will go out-of-bounds
-    // If true, update fruit x and y based on speeds. If false, generate new fruit
-    if (rand() >= 0.75){
+    // If true, update fruit x and y based on speeds. If false, fruit not thrown
+    if (random() >= 0.75){
         fruit -> throw = true;
     }
     else{
@@ -115,62 +130,24 @@ void generateFruits(const char name){
  * ===================================================================================
  */
 
-int isCut(Fruit fr, Point swipe) {
-    int radius = 0;
-
-    switch(fr.name) {
-        case 'm' : radius = MELON_RADIUS;
-                            break;
-        case 'l' : radius = LEMON_RADIUS;
-                            break;
-        case 'g' : radius = GRAPE_RADIUS;
-                            break;
-        default  : radius = APPLE_RADIUS;
-    }
-
-    int distSwipeX = (fr.x - swipe.x) * (fr.x - swipe.x);
-    int distSwipeY = (fr.y - swipe.y) * (fr.y - swipe.y);
-    int distRad = radius*radius;
-
-    return distSwipeX < distRad ? distSwipeY < distRad ? 1 : 0 : 0;
-}
-
 void fruit_ninja(){
 
     // seeds the random number generator
-    srand(time(NULL));
+    srandom(TIM15 -> CNT);
 
     // generates the fruit attributes that will be used for the game
     for (int i = 0; i < NUM_FRUITS; i++){
         generateFruits(fruits_names[i]);
     }
 
-    bool firstRound = true;
-    bool gameOver = true;
-    bool GameRunning = true;
+    bool gameOver = false;
+    score = 0;
+    int fruitCount = 0;
 
-    //Initialize the TIM3 ISR
-    init_tim3();
+    //Initialize the TIM15 ISR
+    init_tim15();
     // continuous loop for the game
-    while (GameRunning){
-
-        // checks if the game is over
-        if (gameOver){
-            // if the game is still in the first round, display the game over screen and update the round
-            if (firstRound){
-                show_gameover_screen();
-                firstRound = false;
-            }
-
-            gameOver = false;
-            playerLives = 3;
-
-            // TODO: Need to change this display to draw the lives for us
-            // Use what Bailey said and change it to draw a black box over the image lives
-
-            score = 0; // updates the score back to 0
-        }
-
+    while (!gameOver){
         // TODO: Need some way to check whenever the game is over
         // for event in pygame.event.get():
         //     # checking for closing window
@@ -181,84 +158,81 @@ void fruit_ninja(){
         Fruit *current_fruit = fruits;
 
         // loops through every fruit in the fruits linked list
-        while (current_fruit != NULL){
-
+        while (current_fruit != NULL) {
+            if(vector[0].x && vector[0].y)
+                update3(vector[0].x, vector[0].x, &blade);
+            erase3(vector[1].x, vector[1].y);
             // checks if the fruit should be thrown
             if ((current_fruit -> throw) == true){
+                //Disable current interrupt while updating the fruit
+                asm("cpsid i");
                 current_fruit -> x += current_fruit -> x_speed;       // increases the fruits x coordinate by x_speed
-                current_fruit -> y += current_fruit -> y_speed;       // increases the fruits y coorindate by y_speed
+                current_fruit -> y += current_fruit -> y_speed;       // increases the fruits y coordinate by y_speed
                 current_fruit -> y_speed += (1 * current_fruit->t); // changes the y-trajectory of the fruit
                 current_fruit -> t += 1;                            // changes the trajectory speed for the next iteration
 
-                if (current_fruit -> x <= SCREEN_WIDTH){
-                    // TODO: Display the fruit
-                    // gameDisplay.blit(value['img'], (value['x'], value['y']))    #displaying the fruit inside screen dynamically
-                    printf("\n"); // place holder
+                if ((current_fruit -> x) - (current_fruit -> rad) <= SCREEN_WIDTH){
+                    drawCurrFruit(current_fruit, current_fruit -> x, current_fruit -> y);
                 }
                 else{
                     // generates a fruit with random attributes
                     generateFruits(current_fruit -> name);
                 }
 
-                // TODO: Include the X and Y position of the fruit
-                // This should be a vector, ask Bailey
-                // current_position = pygame.mouse.get_pos()
-                // current_position[0] == X
-                // current_position[1] == Y
-                int User_X;
-                int User_Y;
+                current_fruit -> hit = isCut(*current_fruit);
 
                 // checks if the player has made contact with a fruit or bomb
-                if (!(current_fruit -> hit) && (User_X > current_fruit -> x) && (User_X < (current_fruit -> x) + 60) && (User_Y > (current_fruit -> y)) && (User_Y < (current_fruit -> y) + 60)){
+                if (current_fruit -> hit){
 
                     // checks if the object hit was a bomb
                     if (current_fruit -> name == 'b'){
 
                         // user loses all lives if a bomb is swiped
-                        //TODO: Implement hideLives
-                        playerLives -= 1;
-                        showLives(playerLives);
+                        //include dramatic pause
+                        playerLives = 0;
+                        show_lives(playerLives);
+                        //Indicate bomb was cut; display this
+                        current_fruit -> image = 'c';
+                        drawCurrFruit(current_fruit, current_fruit -> x, current_fruit -> y);
+                        nano_wait(1500000000);  //wait 1.5 seconds, audio effects
 
-                        // if the user swipes a bomb, GAME OVER message should be displayed and the window should be reset
-                        if (playerLives == 0){
-                            show_gameover_screen();
-                            gameOver = true;
-                        }
-
-                        // updates the new image for the bomb after explosion
-                        // TODO: Change this location
+                        //break out of loop
+                        gameOver = true;
+                        break;
                     }
 
                     // indication that a fruit was swiped
                     else{
-                        // TODO Need to change this to open whichever image it was when the fruit gets cut
-                        // updates a new image for the fruit after explosion
-
+                        current_fruit -> image = 'c';
+                        drawCurrFruit(current_fruit, current_fruit -> x, current_fruit -> y);
                     }
 
-                    // updates the fruit's new image after being swiped along with the speed in the x direction
-                    current_fruit -> image = 'c';  //'c' == cut, indicates display function should show cut fruit
-                    current_fruit -> x_speed += 10;
+                    // updates the fruit's speed in the y direction
+                    current_fruit -> y_speed += 10;
 
-                    if (current_fruit -> name != 'b'){
+                    if (current_fruit -> name != 'b') {
                         // updates the score if the fruit swiped was NOT a bomb
                         score += 1;
                     }
-
-                    // TODO: Update the score here
-                    //  UpdateScore();
+                    show_score(score);
 
                     // indication that the fruit has been hit already
                     current_fruit -> hit = true;
                 }
-                else{
+                else if(fruitCount < 2){
                     // generates new fruit
                     generateFruits(current_fruit -> name);
+                    fruitCount++;
                 }
 
                 // chooses the next fruit to be displayed
                 current_fruit = current_fruit -> next;
             }
+            //Re-enable interrupt after updating fruit
+            asm("cpsie i");
+            if(gameOver) {break;}
         }
+        if(gameOver) {break;}
     }
+    show_gameover_screen(score);
 }
