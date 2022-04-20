@@ -6,7 +6,7 @@
 #define SCREEN_WIDTH  240
 #define VECTOR_SIZE 15
 
-//A vector to be externally available to main
+//A vector to be externally available to other functions
 //Holds VECTOR_SIZE entries of the most recent points
 Point vector[VECTOR_SIZE];
 

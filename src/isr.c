@@ -11,7 +11,6 @@
 #define APPLE_RADIUS 25 //Diameter of 50
 #define TempPicturePtr(name,width,height) Picture name[(width)*(height)/6+2] = { {width,height,2} }
 
-
 extern Point vector[VECTOR_SIZE];
 extern const Picture background; // A 240x320 background image
 extern const Picture blade; // A 3x3 background image
@@ -116,8 +115,8 @@ int test_cut_apple(int is_cut) {
 //x and y into a global vector, and using update2() and erase() to animate
 //the "blade" and its trajectory
 //Note: The tail is best visible/clean when using a stylus instead of finger
-void TIM3_IRQHandler() {
-    TIM3 -> SR &= ~TIM_SR_UIF;
+void TIM15_IRQHandler  () {
+    TIM15 -> SR &= ~TIM_SR_UIF;
     //Read x coordinate and output resulting pixel to SPI OLED
     int x_pixel = read_x();
 
@@ -126,21 +125,28 @@ void TIM3_IRQHandler() {
 
     Point temp = {.x = x_pixel, .y = y_pixel};
     //Shift new point into index 0 of the vector
-    //Also erase previous blade image and draw the new one
+    //Allow fruit_ninja() to update drawing of this
     shift_into_vector(temp);
-    if(x_pixel && y_pixel)
-        update3(x_pixel, y_pixel, &blade);
-    erase3(vector[1].x, vector[1].y);
+
     meloncut = test_cut_melon(meloncut);
     lemoncut = test_cut_lemon(lemoncut);
     applecut = test_cut_apple(applecut);
     grapecut = test_cut_grape(grapecut);
     show_score(count);
+    show_lives(3);
+    if(count == 20)
+        show_lives(2);
+    else if(count == 40)
+        show_lives(1);
+    else if(count == 60) {
+        show_lives(0);
+        show_gameover_screen(count);
+    }
 
 //DEBUGGING AND VERIFICATION----------------------------------------------------
     //Print this first vector entry to OLED
 
-#define TEST_FIRST
+//#define TEST_FIRST
 #ifdef TEST_FIRST
     char string[21];
     snprintf(string, 21, "X Pixel: %03d", vector[0].x);
@@ -176,12 +182,12 @@ void TIM3_IRQHandler() {
     //--------------------------------------------------------------------------
 }
 
-//Initialize the TIM3 ISR for reading the x and y coordinates and animating swipes
-void init_tim3() {
-    RCC -> APB1ENR |= RCC_APB1ENR_TIM3EN;
-    TIM3 -> PSC = 120-1;
-    TIM3 -> ARR = 400-1;
-    TIM3 -> DIER |= TIM_DIER_UIE;
-    TIM3 -> CR1 |= TIM_CR1_CEN;
-    NVIC -> ISER[0] |= 1<<TIM3_IRQn;
+//Initialize the TIM15 ISR for reading the x and y coordinates and animating swipes
+void init_tim15() {
+    RCC -> APB2ENR |= RCC_APB2ENR_TIM15EN;
+    TIM15 -> PSC = 120-1;
+    TIM15-> ARR = 400-1;
+    TIM15 -> DIER |= TIM_DIER_UIE;
+    TIM15 -> CR1 |= TIM_CR1_CEN;
+    NVIC -> ISER[0] |= 1<<TIM15_IRQn;
 }

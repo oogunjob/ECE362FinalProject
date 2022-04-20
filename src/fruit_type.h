@@ -6,6 +6,7 @@
 typedef struct fruit {
   char name;
   char image;
+  int rad;
   int x;
   int y;
   int x_speed;

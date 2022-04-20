@@ -8,9 +8,7 @@
 #define VECTOR_SIZE 15
 
 extern const Picture background; // A 240x320 background image
-extern const Picture blade;
-
-
+extern const Picture blade; // A 3x3 pixelated image to indicate where swipe is
 
 //NOTES:
 //Screen Dims: 240 x 320
@@ -26,7 +24,7 @@ extern const Picture blade;
 //(240,320)-------------(240,0)
 
 //TIM6 for DAC/DMA (NO ISR for DAC, needs to run at highest priority)
-//TIM3 for read_x() and read_y() (which use ADC channels 8 and 9)
+//TIM15 for read_x() and read_y() (which use ADC channels 8 and 9) and seeding random numbers
 //OLED display functions in oled.h/oled.c
 //Swipe mechanics and storage functions in swipe.h/swipe.c
 //Graphics for output logic to LCD in graphics.c/graphics.h
@@ -60,7 +58,7 @@ int main() {
     spi1_init_oled();
     init_reads();
     //fruit_ninja();
-    init_tim3();
+    init_tim15();
     for(;;)
         ;
 }

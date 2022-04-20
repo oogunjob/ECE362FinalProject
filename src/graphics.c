@@ -7,17 +7,18 @@
 //-----------------------------------------------
 
 extern const Picture background; // A 240x320 background image
-extern const Picture blade; // A 30x30 "ninja star" image
-extern const Picture background; // A 240x320 background image
+extern const Picture game_over;  //A 58x80 image displaying "GAME OVER"
+extern const Picture black_rectangle; //A 24x20 black rectangle to cover lives
 extern const Picture melon; // A 60x60 image of a melon
 extern const Picture lemon; // A 50x50 image of a lemon
 extern const Picture grape; // A 40x40 image of a grape
 extern const Picture apple; // A 50x50 image of an apple
-extern const Picture bomb; // A 40x40 image of an apple
+extern const Picture bomb; // A 40x40 image of a bomb
 extern const Picture melon_cut; // A 60x60 image of a melon, cut in half
 extern const Picture lemon_cut; // A 50x50 image of a lemon, cut in half
 extern const Picture grape_cut; // A 40x40 image of a grape, cut in half
 extern const Picture apple_cut; // A 50x50 image of an apple, cut in half
+extern const Picture bomb_cut; // A 40x40 image of a bomb, exploded
 extern const Picture num_0; //A 16x8 image of the number 0
 extern const Picture num_1; //A 16x8 image of the number 1
 extern const Picture num_2; //A 16x8 image of the number 2
@@ -59,6 +60,7 @@ void pic_subset(Picture *dst, const Picture *src, int sx, int sy)
 // transparent color.
 void pic_overlay(Picture *dst, int xoffset, int yoffset, const Picture *src, int transparent)
 {
+    int count = 0;
     for(int y=0; y<src->height; y++) {
         int dy = y+yoffset;
         if (dy < 0)
@@ -74,6 +76,7 @@ void pic_overlay(Picture *dst, int xoffset, int yoffset, const Picture *src, int
             unsigned short int p = src->pix2[y*src->width + x];
             if (p != transparent)
                 dst->pix2[dy*dst->width + dx] = p;
+            count++;
         }
     }
 }
@@ -154,30 +157,30 @@ void update60(int x, int y, const Picture* img)
     LCD_DrawPicture(x-tmp->width/2,y-tmp->height/2, tmp); // Draw
 }
 
-void drawCurrFruit(Fruit fruit, int radius, int prev_x, int prev_y) {
+void drawCurrFruit(Fruit* fruit, int prev_x, int prev_y) {
     Picture img;
-    switch(fruit.name) {
-        case 'm':   img = fruit.image == 'c' ? melon_cut : melon;
+    switch(fruit -> name) {
+        case 'm':   img = fruit -> image == 'c' ? melon_cut : melon;
                     break;
-        case 'l':   img = fruit.image == 'c' ? lemon_cut : lemon;
+        case 'l':   img = fruit -> image == 'c' ? lemon_cut : lemon;
                     break;
-        case 'a':   img = fruit.image == 'c' ? apple_cut : apple;
+        case 'a':   img = fruit -> image == 'c' ? apple_cut : apple;
                     break;
-        case 'g':   img = fruit.image == 'c' ? grape_cut : grape;
+        case 'g':   img = fruit -> image == 'c' ? grape_cut : grape;
                     break;
-        default:    img = bomb;
+        default:    img = fruit -> image == 'c' ? bomb_cut : bomb;
     }
-    if(radius == 40) {
-        erase40(prev_x + radius, prev_y + radius);
-        update40(fruit.x + radius, fruit.y + radius, &img);
+    if(fruit -> rad == 20) {
+        //erase40(prev_x + fruit -> rad, prev_y + fruit -> rad);
+        update40((fruit -> x) + (fruit -> rad), (fruit -> y) + (fruit -> rad), &img);
     }
-    else if(radius == 50) {
-        erase50(prev_x + radius, prev_y + radius);
-        update50(fruit.x + radius, fruit.y + radius, &img);
+    else if(fruit -> rad == 25) {
+        //erase50(prev_x + fruit -> rad, prev_y + fruit -> rad);
+        update50((fruit -> x) + (fruit -> rad), (fruit -> y) + (fruit -> rad), &img);
     }
     else {
-        erase60(prev_x + radius, prev_y + radius);
-        update60(fruit.x + radius, fruit.y + radius, &img);
+        //erase60(prev_x + fruit -> rad, prev_y + fruit -> rad);
+        update60((fruit -> x) + (fruit -> rad), (fruit -> y) + (fruit -> rad), &img);
     }
 }
 
@@ -222,6 +225,32 @@ void show_score(int score) {
         case 7:     LCD_DrawPicture(6,246,&num_7); break;
         case 8:     LCD_DrawPicture(6,246,&num_8); break;
         default:    LCD_DrawPicture(6,246,&num_9);
+    }
+}
+
+//Remove all objects from screen and show NO lives, but leave score in place
+void wipe_screen(int score) {
+    LCD_DrawPicture(0,0,&background);
+    show_lives(0);
+    show_score(score);
+}
+
+//Function to display GAME OVER across normal background
+void show_gameover_screen(int score) {
+    wipe_screen(score);
+    TempPicturePtr(tmp,58,80); // Create a temporary 58x80 image.
+    pic_subset(tmp, &background, 100, 120); // Copy the background at (100,120)
+    pic_overlay(tmp, 0, 0, &game_over, 0x0); // Overlay the img, no offset
+    LCD_DrawPicture(100, 120, tmp); // Draw at (100,120)
+    for(;;)
+        ;
+}
+
+//Cover up 3-lives rectangles to display remaining lives
+//Offset values into DrawPicture experimentally found
+void show_lives(int lives) {
+    for(int i = 3 - lives; i > 0; i--) {
+        LCD_DrawPicture(4, 10 + (28 * (i - 1)), &black_rectangle);
     }
 }
 
