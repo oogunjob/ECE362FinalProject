@@ -39,16 +39,6 @@ extern const Picture blade; // A 3x3 pixelated image to indicate where swipe is
 //--Attempt to use integer math for fruit trajectory (if not possible,
 //  then use fixed-point)
 
-//-----------------------------------------------
-//               FUNCTION DECLARATIONS
-//-----------------------------------------------
-void nano_wait(unsigned int n);
-
-//-----------------------------------------------
-//                MISCELLANEOUS
-//-----------------------------------------------
-
-
 int main() {
     LCD_Setup(); // this will call init_lcd_spi()
     //Draw background with upper right corner at (0,0)
