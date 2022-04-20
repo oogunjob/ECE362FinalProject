@@ -171,17 +171,26 @@ void drawCurrFruit(Fruit* fruit, int prev_x, int prev_y) {
         default:    img = fruit -> image == 'c' ? &bomb_cut : &bomb;
     }
     if(fruit -> rad == 20) {
-        //erase40(prev_x + fruit -> rad, prev_y + fruit -> rad);
-        update40((fruit -> x) + (fruit -> rad), (fruit -> y) + (fruit -> rad), img);
+        erase40(prev_x, prev_y);
+        update40((fruit -> x), (fruit -> y), img);
     }
     else if(fruit -> rad == 25) {
-        //erase50(prev_x + fruit -> rad, prev_y + fruit -> rad);
-        update50((fruit -> x) + (fruit -> rad), (fruit -> y) + (fruit -> rad), img);
+        erase50(prev_x, prev_y);
+        update50((fruit -> x), (fruit -> y), img);
     }
     else {
-        //erase60(prev_x + fruit -> rad, prev_y + fruit -> rad);
-        update60((fruit -> x) + (fruit -> rad), (fruit -> y) + (fruit -> rad), img);
+        erase60(prev_x, prev_y);
+        update60((fruit -> x), (fruit -> y), img);
     }
+}
+
+void eraseCurrFruit(Fruit* fruit) {
+    if(fruit -> rad == 20)
+        erase40(fruit -> x, fruit -> y);
+    else if(fruit -> rad == 25)
+        erase50(fruit -> x, fruit -> y);
+    else
+        erase60(fruit -> x, fruit -> y);
 }
 
 void show_score(int score) {
@@ -229,15 +238,15 @@ void show_score(int score) {
 }
 
 //Remove all objects from screen and show NO lives, but leave score in place
-void wipe_screen(int score) {
+void wipe_screen(int score, int lives) {
     LCD_DrawPicture(0,0,&background);
-    show_lives(0);
+    show_lives(lives);
     show_score(score);
 }
 
 //Function to display GAME OVER across normal background
-void show_gameover_screen(int score) {
-    wipe_screen(score);
+void show_gameover_screen(int score, int lives) {
+    wipe_screen(score, lives);
     TempPicturePtr(tmp,58,80); // Create a temporary 58x80 image.
     pic_subset(tmp, &background, 100, 120); // Copy the background at (100,120)
     pic_overlay(tmp, 0, 0, &game_over, 0x0); // Overlay the img, no offset

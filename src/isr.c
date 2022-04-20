@@ -14,16 +14,7 @@
 #define TempPicturePtr(name,width,height) Picture name[(width)*(height)/6+2] = { {width,height,2} }
 
 extern Point vector[VECTOR_SIZE];
-extern const Picture background; // A 240x320 background image
 extern const Picture blade; // A 3x3 background image
-extern const Picture melon; // A 60x60 image of a melon
-extern const Picture lemon; // A 50x50 image of a lemon
-extern const Picture grape; // A 40x40 image of a grape
-extern const Picture apple; // A 50x50 image of an apple
-extern const Picture melon_cut; // A 60x60 image of a melon, cut in half
-extern const Picture lemon_cut; // A 50x50 image of a lemon, cut in half
-extern const Picture grape_cut; // A 40x40 image of a grape, cut in half
-extern const Picture apple_cut; // A 50x50 image of an apple, cut in half
 int meloncut = 0;
 int lemoncut = 0;
 int grapecut = 0;
@@ -39,9 +30,10 @@ int test_cut_apple(int is_cut);
 #define NUM_FRUITS 5
 int playerLives = 3; // number of players lives
 int score = 0; // current score
-const char fruits_names[NUM_FRUITS] = {'a', 'm', 'g', 'l', 'b'}; // fruits and bomb that will be used for the game
-//a == apple, m == melon, g == grape, l == lemon, b == bomb
+const char fruits_names[NUM_FRUITS] = {'a', 'b', 'g', 'l', 'm'}; // fruits and bomb that will be used for the game
+
 Fruit *fruits = NULL; // linked list that stores all of the fruits that will be displayed in the game
+//a == apple, m == melon, g == grape, l == lemon, b == bomb
 
 int test_cut_melon(int is_cut) {
     Point center = {.x = (SCREEN_WIDTH-120+MELON_RADIUS), .y = 240+MELON_RADIUS};
@@ -137,23 +129,28 @@ void TIM15_IRQHandler() {
             erase3(vector[1].x, vector[1].y);
             // checks if the fruit should be thrown
             if ((current_fruit -> throw) == true){
+                current_fruit -> prev_x = current_fruit -> x;
+                current_fruit -> prev_y = current_fruit -> y;
                 current_fruit -> x += current_fruit -> x_speed;       // increases the fruits x coordinate by x_speed
                 current_fruit -> y += current_fruit -> y_speed;       // increases the fruits y coordinate by y_speed
-                if(current_fruit -> name == 'b') {
+
+                //DEBUGGING
+                /*if(current_fruit -> name == 'm') {
                     char string[21];
                     snprintf(string, 21, "X Pixel: %03d", current_fruit -> x);
                     spi1_display1(string);
                     snprintf(string, 21, "Y Pixel: %03d", current_fruit -> y);
                     spi1_display2(string);
-                }
+                }*/
                 current_fruit -> x_speed += (1 * current_fruit->t); // changes the x-trajectory of the fruit
                 current_fruit -> t += 1;                            // changes the trajectory speed for the next iteration
 
-                if ((current_fruit -> x) - (current_fruit -> rad) <= SCREEN_WIDTH){
-                    drawCurrFruit(current_fruit, current_fruit -> x, current_fruit -> y);
+                if ((current_fruit -> x) - (current_fruit -> rad) <= SCREEN_WIDTH) {
+                    drawCurrFruit(current_fruit, current_fruit -> prev_x, current_fruit -> prev_y);
                 }
                 else{
                     // generates a fruit with random attributes
+                    eraseCurrFruit(current_fruit);
                     generateFruits(current_fruit -> name);
                 }
 
@@ -207,8 +204,10 @@ void TIM15_IRQHandler() {
             }
             //Re-enable interrupt after updating fruit
             //ENABLE_SWIPE;
+            eraseCurrFruit(current_fruit);
             if(gameOver) {break;}
         }
+        //wipe_screen(score, playerLives);
         if(gameOver) {break;}
     }
     show_gameover_screen(score);
@@ -293,6 +292,8 @@ void generateFruits(const char name){
     fruit -> t = 0;
     fruit -> hit = false;
     fruit -> rad = get_fruit_radius(name);
+    fruit -> prev_y = 0;
+    fruit -> prev_x = 0;
 
     // Return the next random floating point number in the range [0.0, 1.0) to keep the fruits inside the gameDisplay
     // This throw key indicates if the fruit will go out-of-bounds
