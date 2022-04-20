@@ -158,29 +158,29 @@ void update60(int x, int y, const Picture* img)
 }
 
 void drawCurrFruit(Fruit* fruit, int prev_x, int prev_y) {
-    Picture img;
+    const Picture* img;
     switch(fruit -> name) {
-        case 'm':   img = fruit -> image == 'c' ? melon_cut : melon;
+        case 'm':   img = fruit -> image == 'c' ? &melon_cut : &melon;
                     break;
-        case 'l':   img = fruit -> image == 'c' ? lemon_cut : lemon;
+        case 'l':   img = fruit -> image == 'c' ? &lemon_cut : &lemon;
                     break;
-        case 'a':   img = fruit -> image == 'c' ? apple_cut : apple;
+        case 'a':   img = fruit -> image == 'c' ? &apple_cut : &apple;
                     break;
-        case 'g':   img = fruit -> image == 'c' ? grape_cut : grape;
+        case 'g':   img = fruit -> image == 'c' ? &grape_cut : &grape;
                     break;
-        default:    img = fruit -> image == 'c' ? bomb_cut : bomb;
+        default:    img = fruit -> image == 'c' ? &bomb_cut : &bomb;
     }
     if(fruit -> rad == 20) {
         //erase40(prev_x + fruit -> rad, prev_y + fruit -> rad);
-        update40((fruit -> x) + (fruit -> rad), (fruit -> y) + (fruit -> rad), &img);
+        update40((fruit -> x) + (fruit -> rad), (fruit -> y) + (fruit -> rad), img);
     }
     else if(fruit -> rad == 25) {
         //erase50(prev_x + fruit -> rad, prev_y + fruit -> rad);
-        update50((fruit -> x) + (fruit -> rad), (fruit -> y) + (fruit -> rad), &img);
+        update50((fruit -> x) + (fruit -> rad), (fruit -> y) + (fruit -> rad), img);
     }
     else {
         //erase60(prev_x + fruit -> rad, prev_y + fruit -> rad);
-        update60((fruit -> x) + (fruit -> rad), (fruit -> y) + (fruit -> rad), &img);
+        update60((fruit -> x) + (fruit -> rad), (fruit -> y) + (fruit -> rad), img);
     }
 }
 
