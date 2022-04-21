@@ -1,7 +1,6 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include "stm32f0xx.h"
 #include "fruit_ninja.h"
 
 #define WIDTH 320
@@ -19,6 +18,10 @@ int score = 0; // current score
 const char * fruits_names[NUM_FRUITS] = {"apple", "watermelon", "orange", "banana", "bomb"}; // fruits and bomb that will be used for the game
 Fruit *fruits = NULL; // linked list that stores all of the fruits that will be displayed in the game
 
+// include the other pictures here
+extern const Picture background; // TODO: Change to include the images of the other fruits
+
+
 /* ===================================================================================
  * Linked List Functions
  * ===================================================================================
@@ -33,6 +36,20 @@ void push(Fruit **head, Fruit *fruit){
     (*head) = fruit;
 }
 
+void deleteList(Fruit** head){
+
+    Fruit* current = *head;
+    Fruit* next;
+ 
+    while (current != NULL){
+        next = current -> next;
+        free(current);
+        current = next;
+    }
+
+   *head = NULL;
+}
+
 Fruit *search(Fruit *head, const char *name){
     Fruit *current = head; // Initialize current node
 
@@ -42,7 +59,7 @@ Fruit *search(Fruit *head, const char *name){
         if (current -> name == name)
             return current;
 
-        current = current->next;
+        current = current -> next;
     }
     return NULL;
 }
@@ -77,7 +94,6 @@ void generateFruits(const char *name){
 
     // initalization of the fruit
     fruit -> name = name;
-    fruit -> image = "placeholder"; // TODO: Need to assign the original image here
     fruit -> x = (rand() % (HEIGHT - 100 + 1)) + 100; // create a random x value between 100 and HEIGHT
     fruit -> y = WIDTH; // uses the display width of y
     fruit -> x_speed = (rand() % (10 - (-10) + 1)) + (-10); // create a random speed here between -10 and 10
@@ -86,6 +102,24 @@ void generateFruits(const char *name){
     fruit -> t = 0;
     fruit -> hit = false;
     fruit -> next = NULL;
+
+    // nested if statement to decide the image that will be used for the fruit
+    // TODO: Create C files that contain the images for each fruit
+    if(name == "apple"){
+        fruit -> image = &background;
+    }
+    else if(name == "watermelon"){
+        fruit -> image = &background;
+    }
+    else if(name == "orange"){
+        fruit -> image = &background;
+    }
+    else if(name == "banana"){
+        fruit -> image = &background;
+    }
+    else if(name == "bomb"){
+        fruit -> image = &background;
+    }
 
     // Return the next random floating point number in the range [0.0, 1.0) to keep the fruits inside the gameDisplay
     // TODO: Check what this means
@@ -259,4 +293,9 @@ void fruit_ninja(){
             }
         }
     }
+
+    // deletes the linked list of fruits
+    deleteList(&fruits);
+
+    return;
 }
