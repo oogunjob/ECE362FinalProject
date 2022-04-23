@@ -4,7 +4,5 @@
 #include <stdio.h>
 #include "swipe.h"
 #include "lcd.h"
-void TIM15_IRQHandler();
-void init_tim15();
 
 #endif

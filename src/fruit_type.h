@@ -7,6 +7,8 @@ typedef struct fruit {
   char name;
   char image;
   int rad;
+  int prev_x;
+  int prev_y;
   int x;
   int y;
   int x_speed;
@@ -15,6 +17,7 @@ typedef struct fruit {
   int t;
   bool hit;
   struct fruit * next;
+  int position;
 } Fruit;
 
 #endif

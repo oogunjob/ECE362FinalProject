@@ -13,6 +13,12 @@ void push(Fruit** head, Fruit* fruit);
 Fruit* search(Fruit* head, const char name);
 int get_fruit_radius(char name);
 
+void TIM15_IRQHandler();
+void init_tim15();
+
+bool screenIsClear();
+
+
 
 
 #endif

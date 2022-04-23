@@ -7,9 +7,6 @@
 #define SCREEN_WIDTH  240
 #define VECTOR_SIZE 15
 
-extern const Picture background; // A 240x320 background image
-extern const Picture blade; // A 3x3 pixelated image to indicate where swipe is
-
 //NOTES:
 //Screen Dims: 240 x 320
 
@@ -50,15 +47,8 @@ void nano_wait(unsigned int n);
 
 
 int main() {
-    LCD_Setup(); // this will call init_lcd_spi()
-    //Draw background with upper right corner at (0,0)
-    LCD_DrawPicture(0,0,&background);
-    init_adc();
-    init_spi1();
-    spi1_init_oled();
-    init_reads();
-    //fruit_ninja();
-    init_tim15();
+    fruit_ninja();
+    //init_tim15();
     for(;;)
         ;
 }
