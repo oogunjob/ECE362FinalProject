@@ -18,6 +18,7 @@ typedef struct fruit {
   bool hit;
   struct fruit * next;
   int position;
+  bool scored;
 } Fruit;
 
 #endif

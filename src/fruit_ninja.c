@@ -16,7 +16,6 @@
 
 extern Point vector[VECTOR_SIZE];
 extern const Picture background; // A 240x320 background image
-extern const Picture heart; //A 19x22 heart to indicate lives
 
 #define NUM_FRUITS 5
 
@@ -35,7 +34,7 @@ void nano_wait(unsigned int n);
 
 int playerLives = 3; // number of players lives
 int score = 0; // current score
-const char fruits_names[NUM_FRUITS] = {'a', 'b', 'g', 'l', 'm'}; // fruits and bomb that will be used for the game
+const char fruits_names[NUM_FRUITS] = {'b', 'a', 'g', 'l', 'm'}; // fruits and bomb that will be used for the game
 Fruit *fruits = NULL; // linked list that stores all of the fruits that will be displayed in the game
 //a == apple, m == melon, g == grape, l == lemon, b == bomb
 
@@ -162,9 +161,8 @@ void fruit_ninja(){
     LCD_Setup(); // this will call init_lcd_spi()
     //Draw background with upper right corner at (0,0)
     LCD_DrawPicture(0,0,&background);
-    for(int i = 3; i > 0; i--) {
-        LCD_DrawPicture(4, 10 + (28 * (i - 1)), &heart);
-    }
+    drawHearts(3);
+    showScore(0);
     init_adc();
     init_spi1();
     spi1_init_oled();
@@ -176,57 +174,47 @@ void fruit_ninja(){
     srandom(TIM15 -> CNT);
     bool gameOver = false;
     score = 0;
-    int fruitCount = 0;
 
     // generates the fruit attributes that will be used for the game
     for (int i = 0; i < NUM_FRUITS; i++){
         generateFruits(fruits_names[i]);
     }
 
+    // make sure that this is the first node in the linked list
+    Fruit *current_fruit = fruits;
+    Fruit *head_fruit = fruits;
     // continuous loop for the game
     while (!gameOver){
-        // TODO: Need some way to check whenever the game is over
-
-        // make sure that this is the first node in the linked list
-        Fruit *current_fruit = fruits;
-
-        //Read x coordinate and output resulting pixel to SPI OLED
-        int x_pixel = read_x();
-
-        //Read y coordinate and output resulting pixel to SPI OLED
-        int y_pixel = read_y();
-
-        Point temp = {.x = x_pixel, .y = y_pixel};
-        //Shift new point into index 0 of the vector
-        //Allow fruit_ninja() to update drawing of this
-        shift_into_vector(temp);
-
-#define TEST_FIRST
-#ifdef TEST_FIRST
-    char string[21];
-    snprintf(string, 21, "X Pixel: %03d", vector[0].x);
-    spi1_display1(string);
-    snprintf(string, 21, "Y Pixel: %03d", vector[0].y);
-    spi1_display2(string);
-#endif
-
+        //Point current_fruit back to beginning of linked list
+        current_fruit = fruits;
         // loops through every fruit in the fruits linked list
         while (current_fruit != NULL) {
+
+            //Read x coordinate and output resulting pixel to SPI OLED
+            int x_pixel = read_x();
+
+            //Read y coordinate and output resulting pixel to SPI OLED
+            int y_pixel = read_y();
+
+            Point temp = {.x = x_pixel, .y = y_pixel};
+            //Shift new point into index 0 of the vector
+            //Allow fruit_ninja() to update drawing of this
+            shift_into_vector(temp);
+
+    #define TEST_FIRST
+    #ifdef TEST_FIRST
+        char string[21];
+        snprintf(string, 21, "X Pixel: %03d", vector[0].x);
+        spi1_display1(string);
+        snprintf(string, 21, "Y Pixel: %03d", vector[0].y);
+        spi1_display2(string);
+    #endif
             // checks if the fruit should be thrown
             if ((current_fruit -> throw) == true){
                 current_fruit -> prev_x = current_fruit -> x;
                 current_fruit -> prev_y = current_fruit -> y;
                 current_fruit -> x += current_fruit -> x_speed;       // increases the fruits x coordinate by x_speed
                 current_fruit -> y += current_fruit -> y_speed;       // increases the fruits y coordinate by y_speed
-
-                //DEBUGGING
-                /*if(current_fruit -> name == 'm') {
-                    char string[21];
-                    snprintf(string, 21, "X Pixel: %03d", current_fruit -> x);
-                    spi1_display1(string);
-                    snprintf(string, 21, "Y Pixel: %03d", current_fruit -> y);
-                    spi1_display2(string);
-                }*/
                 current_fruit -> x_speed += (1 * current_fruit->t); // changes the x-trajectory of the fruit
                 current_fruit -> t += 1;                            // changes the trajectory speed for the next iteration
 
@@ -235,29 +223,38 @@ void fruit_ninja(){
                 }
                 else{
                     // generates a fruit with random attributes
-                    eraseCurrFruit(current_fruit);
                     if(screenIsClear()) {
-                        for (int i = 0; i < NUM_FRUITS; i++){
-                            generateFruits(fruits_names[i]);
+                        Fruit* ptr = fruits;
+                        //Check if any fruit (not bomb) were not hit AND are on screen
+                        while(ptr) {
+                            if((ptr -> name != 'b') && (ptr -> y < SCREEN_HEIGHT) && !(ptr -> scored))
+                                --score;
+                            eraseCurrFruit(ptr);
+                            ptr = ptr -> next;
                         }
+                        if(score < 0) score = 0;
+                        showScore(score);
+                        for (int i = 0; i < NUM_FRUITS; i++)
+                            generateFruits(fruits_names[i]);
                     }
                 }
 
                 current_fruit -> hit = isCut(*current_fruit);
 
                 // checks if the player has made contact with a fruit or bomb
-                if (!(current_fruit -> hit) && (vector[0].x > current_fruit -> x) && (vector[0].x < (current_fruit -> x) + 60)
-                                            && (vector[0].y > current_fruit -> y) && (vector[0].y < (current_fruit -> y) + 60)){
+                if (current_fruit -> hit){
 
                     // checks if the object hit was a bomb
                     if (current_fruit -> name == 'b'){
 
                         // user loses one life if a bomb is swiped
-                        --playerLives;
-                        show_lives(playerLives);
-                        //Indicate bomb was cut; display this
-                        current_fruit -> image = 'c';
-
+                        if(!(current_fruit -> scored)) {
+                            current_fruit -> scored = true;
+                            --playerLives;
+                            showLives(playerLives);
+                            //Indicate bomb was cut; display this
+                            current_fruit -> image = 'c';
+                        }
                         //break out of loop
                         if(!playerLives) {
                             gameOver = true;
@@ -274,11 +271,12 @@ void fruit_ninja(){
                     // updates the fruit's speed in the x direction
                     current_fruit -> x_speed += 1;
 
-                    if (current_fruit -> name != 'b' && !(current_fruit -> hit)) {
+                    if (current_fruit -> name != 'b' && !(current_fruit -> scored)) {
                         // updates the score if the fruit swiped was NOT a bomb
+                        current_fruit -> scored = true;
                         score += 1;
                     }
-                    show_score(score);
+                    showScore(score);
 
                     // indication that the fruit has been hit already
                     current_fruit -> hit = true;
@@ -287,12 +285,26 @@ void fruit_ninja(){
                 // chooses the next fruit to be displayed
                 current_fruit = current_fruit -> next;
             }
-            if(current_fruit)
+            if(current_fruit && current_fruit -> x > (SCREEN_WIDTH-40))
                 eraseCurrFruit(current_fruit);
+            else if(head_fruit -> x > (SCREEN_WIDTH-40))
+                eraseCurrFruit(head_fruit);
             if(gameOver) {break;}
         }
         if(gameOver) {break;}
     }
+    //Dramatic pause at end. Still display bomb, wipe everything else
+    wipe_screen(score, playerLives);
+    drawCurrFruit(current_fruit, current_fruit -> x, current_fruit -> y);
+    //LEAVE ROOM FOR BOMB SOUND HERE---------------------------------------
+    //Visual effect: blink hearts 6 times
+    for(int i = 0; i < 6; i++) {
+        drawHearts();
+        nano_wait(250000000);
+        showLives(0);
+        nano_wait(250000000);
+    }
+    nano_wait(2500000000);
     show_gameover_screen(score, playerLives);
 }
 
@@ -320,12 +332,12 @@ void generateFruits(const char name){
                           break;
             case 'g':     (fruit -> position) = 3;
                           break;
-            default:      (fruit -> position) = 4;
+            case 'a':     (fruit -> position) = 4;
+                          break;
+            default:      (fruit -> position) = 5;
         }
     }
     else{
-#define DISABLE_ISR asm("cpsid i")
-#define ENABLE_ISR asm("cpsie i")
         // indicates that the fruit does not need to be added back to list after initialization
         new_fruit = false;
     }
@@ -336,26 +348,31 @@ void generateFruits(const char name){
     fruit -> y = ((random() % (SCREEN_HEIGHT - 1 + 1)) + 1); // create a random y value between 0 and HEIGHT
     fruit -> x = SCREEN_WIDTH; // uses the display width of x
     fruit -> y_speed = (random() % (1 - (-1) + 1)) + (-1); // create a random speed here between -1 and 1
-    fruit -> x_speed = (random() % (-10 - (-30) + 1)) + (-30); // create a random speed here -30 and -10
+    fruit -> x_speed = (random() % (-15 - (-30) + 1)) + (-30); // create a random speed here -30 and -15
     fruit -> throw = false;
     fruit -> t = 0;
     fruit -> hit = false;
     fruit -> rad = get_fruit_radius(name);
     fruit -> prev_y = 0;
     fruit -> prev_x = 0;
+    fruit -> scored = false;
 
     switch(fruit -> position) {
-        case 1:     (fruit -> position) = 2;
+        case 1:     (fruit -> position) = 4;
                     (fruit -> y) = 280;
                     break;
         case 2:     (fruit -> position) = 3;
-                     (fruit -> y) = 200;
+                    (fruit -> y) = 200;
                       break;
-        case 3:     (fruit -> position) = 4;
+        case 3:     (fruit -> position) = 5;
                     (fruit -> y) = 120;
-                      break;
-        default:     (fruit -> position) = 1;
-                      (fruit -> y) = 40;
+                    break;
+        case 4:     (fruit -> position) = 2;
+                    (fruit -> y) = 40;
+                    break;
+        //Value of 5 = do not show on screen
+        default:    (fruit -> position) = 1;
+                    (fruit -> y) = 400;
     }
 
     // Return the next random floating point number in the range [0.0, 1.0) to keep the fruits inside the gameDisplay
