@@ -7,8 +7,8 @@
 //-----------------------------------------------
 
 extern const Picture background; // A 240x320 background image
+extern const Picture heart; //A 19x22 heart to indicate lives
 extern const Picture game_over;  //A 58x80 image displaying "GAME OVER"
-extern const Picture black_rectangle; //A 24x20 black rectangle to cover lives
 extern const Picture melon; // A 60x60 image of a melon
 extern const Picture lemon; // A 50x50 image of a lemon
 extern const Picture grape; // A 40x40 image of a grape
@@ -193,10 +193,9 @@ void eraseCurrFruit(Fruit* fruit) {
         erase60(fruit -> x, fruit -> y);
 }
 
-void show_score(int score) {
+void showScore(int score) {
     //Display 1's digit (16x8 pic)
     switch(score % 10) {
-        case 0:     LCD_DrawPicture(6,226,&num_0); break;
         case 1:     LCD_DrawPicture(6,226,&num_1); break;
         case 2:     LCD_DrawPicture(6,226,&num_2); break;
         case 3:     LCD_DrawPicture(6,226,&num_3); break;
@@ -205,12 +204,12 @@ void show_score(int score) {
         case 6:     LCD_DrawPicture(6,226,&num_6); break;
         case 7:     LCD_DrawPicture(6,226,&num_7); break;
         case 8:     LCD_DrawPicture(6,226,&num_8); break;
-        default:    LCD_DrawPicture(6,226,&num_9);
+        case 9:     LCD_DrawPicture(6,226,&num_9); break;
+        default:    LCD_DrawPicture(6,226,&num_0);
     }
 
     //Display 10's digit (16x8 pic)
     switch((score/10) % 10) {
-        case 0:     LCD_DrawPicture(6,236,&num_0); break;
         case 1:     LCD_DrawPicture(6,236,&num_1); break;
         case 2:     LCD_DrawPicture(6,236,&num_2); break;
         case 3:     LCD_DrawPicture(6,236,&num_3); break;
@@ -219,12 +218,12 @@ void show_score(int score) {
         case 6:     LCD_DrawPicture(6,236,&num_6); break;
         case 7:     LCD_DrawPicture(6,236,&num_7); break;
         case 8:     LCD_DrawPicture(6,236,&num_8); break;
-        default:    LCD_DrawPicture(6,236,&num_9);
+        case 9:     LCD_DrawPicture(6,236,&num_9); break;
+        default:    LCD_DrawPicture(6,236,&num_0);
     }
 
     //Display 100's digit (16x8 pic)
     switch((score/100) % 10) {
-        case 0:     LCD_DrawPicture(6,246,&num_0); break;
         case 1:     LCD_DrawPicture(6,246,&num_1); break;
         case 2:     LCD_DrawPicture(6,246,&num_2); break;
         case 3:     LCD_DrawPicture(6,246,&num_3); break;
@@ -233,15 +232,16 @@ void show_score(int score) {
         case 6:     LCD_DrawPicture(6,246,&num_6); break;
         case 7:     LCD_DrawPicture(6,246,&num_7); break;
         case 8:     LCD_DrawPicture(6,246,&num_8); break;
-        default:    LCD_DrawPicture(6,246,&num_9);
+        case 9:     LCD_DrawPicture(6,246,&num_9); break;
+        default:    LCD_DrawPicture(6,246,&num_0);
     }
 }
 
 //Remove all objects from screen and show NO lives, but leave score in place
 void wipe_screen(int score, int lives) {
     LCD_DrawPicture(0,0,&background);
-    show_lives(lives);
-    show_score(score);
+    showLives(lives);
+    showScore(score);
 }
 
 //Function to display GAME OVER across normal background
@@ -255,11 +255,32 @@ void show_gameover_screen(int score, int lives) {
         ;
 }
 
+//Erase a 22x22 square of pixels at the coordinates specified
+void eraseHeart(int x, int y)
+{
+    TempPicturePtr(tmp,22,22); // Create a temporary 22x22 image.
+    pic_subset(tmp, &background, x-tmp->width/2, y-tmp->height/2); // Copy the background
+    LCD_DrawPicture(x-tmp->width/2,y-tmp->height/2, tmp); // Draw
+}
+
 //Cover up 3-lives rectangles to display remaining lives
 //Offset values into DrawPicture experimentally found
-void show_lives(int lives) {
-    for(int i = 3 - lives; i > 0; i--) {
-        LCD_DrawPicture(4, 10 + (28 * (i - 1)), &black_rectangle);
+void showLives(int lives) {
+    switch(lives) {
+        case 3:     break;
+        case 2:     eraseHeart(15, 21);
+                    break;
+        case 1:     eraseHeart(15, 21);
+                    eraseHeart(15, 49);
+                    break;
+        default:    eraseHeart(15, 21);
+                    eraseHeart(15, 49);
+                    eraseHeart(15, 77);
     }
 }
 
+void drawHearts() {
+    for(int i = 3; i > 0; i--) {
+        LCD_DrawPicture(4, 10 + (28 * (i - 1)), &heart);
+    }
+}

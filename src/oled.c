@@ -8,6 +8,7 @@
 //-----------------------------------------------
 //                INITIALIZATIONS
 //-----------------------------------------------
+void nano_wait(unsigned int n);
 
 //Initialize the SPI OLED display attached to GPIOA
 void init_spi1() {

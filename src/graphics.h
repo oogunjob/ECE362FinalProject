@@ -16,9 +16,10 @@ void erase60(int x, int y);
 void update60(int x, int y, const Picture* img);
 void drawCurrFruit(Fruit* fruit, int x, int y);
 void eraseCurrFruit(Fruit* fruit);
-void show_score(int score);
+void showScore(int score);
 void wipe_screen(int score, int lives);
 void show_gameover_screen();
-void show_lives(int lives);
+void showLives(int lives);
+void drawHearts();
 
 #endif

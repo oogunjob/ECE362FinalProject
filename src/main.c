@@ -2,12 +2,10 @@
 #include <stdio.h>
 #include "oled.h"
 #include "fruit_ninja.h"
-#include "isr.h"
-#define SCREEN_HEIGHT 320
-#define SCREEN_WIDTH  240
-#define VECTOR_SIZE 15
-
-//NOTES:
+/* ===================================================================================
+ * NOTES
+ * ===================================================================================
+ */
 //Screen Dims: 240 x 320
 
 //VISUALIZATION
@@ -27,28 +25,58 @@
 //Graphics for output logic to LCD in graphics.c/graphics.h
 //Actual graphical representations of objects in named .c files (e.g. background.c)
 //LCD interfacing in lcd.c/lcd.h (DO NOT ALTER ANYTHING IN THESE)
+/* ===================================================================================
+ * LCD
+ * ===================================================================================
+ */
+#define SCREEN_HEIGHT 320
+#define SCREEN_WIDTH  240
+#define VECTOR_SIZE 15
 
-//TODO:
-//--Setup DAC
-//--Update only center of the fruit during motion, and count as "cut"
-//  if swipe is within a specified tolerance (radius) of the center. This way,
-//  no need to keep track of fruit borders
-//--Attempt to use integer math for fruit trajectory (if not possible,
-//  then use fixed-point)
+void internal_clock()
+{
+    /* Disable HSE to allow use of the GPIOs */
+    RCC->CR &= ~RCC_CR_HSEON;
 
-//-----------------------------------------------
-//               FUNCTION DECLARATIONS
-//-----------------------------------------------
-void nano_wait(unsigned int n);
+    /* Enable Prefetch Buffer and set Flash Latency */
+    FLASH->ACR = FLASH_ACR_PRFTBE | FLASH_ACR_LATENCY;
 
-//-----------------------------------------------
-//                MISCELLANEOUS
-//-----------------------------------------------
+    /* HCLK = SYSCLK */
+    RCC->CFGR |= (uint32_t)RCC_CFGR_HPRE_DIV1;
+
+    /* PCLK = HCLK */
+    RCC->CFGR |= (uint32_t)RCC_CFGR_PPRE_DIV1;
+
+    /* PLL configuration = (HSI/2) * 12 = ~48 MHz */
+    RCC->CFGR &= (uint32_t)((uint32_t)~(RCC_CFGR_PLLSRC | RCC_CFGR_PLLXTPRE | RCC_CFGR_PLLMULL));
+    RCC->CFGR |= (uint32_t)(RCC_CFGR_PLLSRC_HSI_Div2 | RCC_CFGR_PLLXTPRE_PREDIV1 | RCC_CFGR_PLLMULL12);
+
+    /* Enable PLL */
+    RCC->CR |= RCC_CR_PLLON;
+
+    /* Wait till PLL is ready */
+    while((RCC->CR & RCC_CR_PLLRDY) == 0)
+    {
+    }
+
+    /* Select PLL as system clock source */
+    RCC->CFGR &= (uint32_t)((uint32_t)~(RCC_CFGR_SW));
+    RCC->CFGR |= (uint32_t)RCC_CFGR_SW_PLL;
+
+    /* Wait till PLL is used as system clock source */
+    while ((RCC->CFGR & (uint32_t)RCC_CFGR_SWS) != (uint32_t)RCC_CFGR_SWS_PLL)
+    {
+    }
+}
 
 
-int main() {
+int main(void)
+{
+    internal_clock();
+    init_wavetable_hybrid2();
+    init_dac();
+    init_tim6();
+    init_tim2(10417);
+    init_tim3(10417);
     fruit_ninja();
-    //init_tim15();
-    for(;;)
-        ;
 }

@@ -4,7 +4,7 @@
 #include "oled.h"
 #define SCREEN_HEIGHT 320
 #define SCREEN_WIDTH  240
-#define VECTOR_SIZE 15
+#define VECTOR_SIZE 3
 #define MELON_RADIUS 30 //Diameter of 60
 #define LEMON_RADIUS 25 //Diameter of 50
 #define GRAPE_RADIUS 20 //Diameter of 40
