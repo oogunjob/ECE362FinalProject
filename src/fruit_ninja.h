@@ -2,7 +2,6 @@
 #define __FRUIT_NINJA_H__
 
 #include <stdbool.h>
-#include "isr.h"
 #include "fruit_type.h"
 #include "graphics.h"
 

@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include "oled.h"
 #include "fruit_ninja.h"
-#include "isr.h"
 #define SCREEN_HEIGHT 320
 #define SCREEN_WIDTH  240
 #define VECTOR_SIZE 15
@@ -30,20 +29,6 @@
 
 //TODO:
 //--Setup DAC
-//--Update only center of the fruit during motion, and count as "cut"
-//  if swipe is within a specified tolerance (radius) of the center. This way,
-//  no need to keep track of fruit borders
-//--Attempt to use integer math for fruit trajectory (if not possible,
-//  then use fixed-point)
-
-//-----------------------------------------------
-//               FUNCTION DECLARATIONS
-//-----------------------------------------------
-void nano_wait(unsigned int n);
-
-//-----------------------------------------------
-//                MISCELLANEOUS
-//-----------------------------------------------
 
 
 int main() {

@@ -2,11 +2,10 @@
 #include "stm32f0xx.h"
 #include "fruit_ninja.h"
 #include "oled.h"
+#include "swipe.h"
 
 #define SCREEN_WIDTH 240
 #define SCREEN_HEIGHT 320
-#define VECTOR_SIZE 15
-#define FPS 12 // how often the game display refreshes // TODO: May not need this
 #define NUM_FRUITS 5
 #define MELON_RADIUS 30 //Diameter of 60
 #define LEMON_RADIUS 25 //Diameter of 50
@@ -14,16 +13,15 @@
 #define APPLE_RADIUS 25 //Diameter of 50
 #define BOMB_RADIUS  20 //Diameter of 40
 
-extern Point vector[VECTOR_SIZE];
 extern const Picture background; // A 240x320 background image
 
 #define NUM_FRUITS 5
-
 
 // 1 0 to 80
 // 2 81 to 160
 // 3 161 to 240
 // 4 241 to 320
+// 5 400 (offscreen)
 
 void nano_wait(unsigned int n);
 
@@ -43,52 +41,6 @@ Fruit *fruits = NULL; // linked list that stores all of the fruits that will be 
  * ISR
  * ===================================================================================
  */
-//ISR for reading x and y analog coords, storing the Point struct containing
-//x and y into a global vector, and using update2() and erase() to animate
-//the "blade" and its trajectory
-//Note: The tail is best visible/clean when using a stylus instead of finger
-void TIM15_IRQHandler() {
-    TIM15 -> SR &= ~TIM_SR_UIF;
-
-//DEBUGGING AND VERIFICATION----------------------------------------------------
-    //Print this first vector entry to OLED
-
-#define TEST_FIRST
-#ifdef TEST_FIRST
-    char string[21];
-    snprintf(string, 21, "X Pixel: %03d", vector[0].x);
-    spi1_display1(string);
-    snprintf(string, 21, "Y Pixel: %03d", vector[0].y);
-    spi1_display2(string);
-#endif
-
-//#define TEST_X
-#ifdef TEST_X
-    //Print x values of entire vector to OLED
-    char string[21];
-    snprintf(string, 21, "X%03d %03d %03d %03d %03d", vector[0].x, vector[1].x,
-             vector[2].x, vector[3].x, vector[4].x);
-    spi1_display1(string);
-    snprintf(string, 21, " %03d %03d %03d %03d %03d", vector[5].x, vector[6].x,
-             vector[7].x, vector[8].x, vector[9].x);
-    spi1_display2(string);
-#endif
-
-//#define TEST_Y
-#ifdef TEST_Y
-    //Print y values of entire vector to OLED
-
-    char string[21];
-    snprintf(string, 21, "Y%03d %03d %03d %03d %03d", vector[0].y, vector[1].y,
-             vector[2].y, vector[3].y, vector[4].y);
-    spi1_display1(string);
-    snprintf(string, 21, " %03d %03d %03d %03d %03d", vector[5].y, vector[6].y,
-             vector[7].y, vector[8].y, vector[9].y);
-    spi1_display2(string);
-#endif
-    //--------------------------------------------------------------------------
-}
-
 //Initialize the TIM15 ISR for reading the x and y coordinates and animating swipes
 void init_tim15() {
     RCC -> APB2ENR |= RCC_APB2ENR_TIM15EN;
@@ -124,13 +76,10 @@ Fruit *search(Fruit *head, const char name){
     }
     return NULL;
 }
-
 /* ===================================================================================
- * Display Functions
- * Used for updating the display of the TFT LCD such as changing the score, adding new fruits, etc
+ * Game Logic and Scoring
  * ===================================================================================
  */
-
 int get_fruit_radius(char name) {
     switch(name) {
        case 'm':   return MELON_RADIUS;
@@ -141,12 +90,6 @@ int get_fruit_radius(char name) {
     }
 }
 
-
-
-/* ===================================================================================
- * Game Logic and Scoring
- * ===================================================================================
- */
 bool screenIsClear() {
     Fruit* ptr = fruits;
     while(ptr) {
@@ -201,7 +144,7 @@ void fruit_ninja(){
             //Allow fruit_ninja() to update drawing of this
             shift_into_vector(temp);
 
-    #define TEST_FIRST
+    //#define TEST_FIRST
     #ifdef TEST_FIRST
         char string[21];
         snprintf(string, 21, "X Pixel: %03d", vector[0].x);
