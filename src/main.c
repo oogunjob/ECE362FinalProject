@@ -76,9 +76,11 @@ int main(void)
     init_wavetable_hybrid2();
     init_dac();
     init_tim6();
+    init_tim7();
     init_tim2(10417);
     init_tim3(10417);
-    //Disable TIM3 until needed during game
+    //Disable TIM3 and TIM7 until needed during game
     TIM3 -> CR1 &= ~TIM_CR1_CEN;
+    TIM7 -> CR1 &= ~TIM_CR1_CEN;
     fruit_ninja();
 }

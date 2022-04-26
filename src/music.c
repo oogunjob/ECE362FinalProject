@@ -29,13 +29,34 @@ void TIM6_DAC_IRQHandler(void)
     DAC->DHR12R1 = sample;
 }
 
+void TIM7_IRQHandler(void){
+    TIM7 -> SR &= ~TIM_SR_UIF;
+
+    int sample = 0;
+    for(int x=0; x < sizeof voice / sizeof voice[0]; x++) {
+        if (voice[x].in_use) {
+            voice[x].offset += voice[x].step;
+            if (voice[x].offset >= N<<16)
+                voice[x].offset -= N<<16;
+            sample += (wavetable[voice[x].offset>>16] * voice[x].volume) >> 4;
+        }
+    }
+    sample = (sample >> 10) + 2048;
+    if (sample > 4095)
+        sample = 4095;
+    else if (sample < 0)
+        sample = 0;
+    DAC->DHR12R2 = sample;
+}
+
+
 // Initialize the DAC so that it can output analog samples
-// on PA4.  Configure it to be triggered by TIM6 TRGO.
+// on PA4.  Configure DAC1 to be triggered by TIM6 TRGO and DAC2 by TIM7 TRGO.
 void init_dac(void)
 {
     RCC -> APB1ENR |= RCC_APB1ENR_DACEN;
-    DAC -> CR &= ~DAC_CR_EN1 & ~DAC_CR_TSEL1;
-    DAC -> CR |= DAC_CR_TEN1 | DAC_CR_EN1;
+    DAC -> CR &= ~DAC_CR_EN1 & ~DAC_CR_EN2 & ~DAC_CR_TSEL1 & ~DAC_CR_TSEL2;
+    DAC -> CR |= DAC_CR_TEN1 | DAC_CR_TEN2 | DAC_CR_TSEL2_1 | DAC_CR_EN1 | DAC_CR_EN2;
 }
 
 // Initialize Timer 6 so that it calls TIM6_DAC_IRQHandler
@@ -53,6 +74,23 @@ void init_tim6(void)
     TIM6 -> CR1 |= TIM_CR1_CEN;
     NVIC -> ISER[0] |= 1<<TIM6_DAC_IRQn;
     NVIC_SetPriority(TIM6_DAC_IRQn,0);
+}
+
+// Initialize Timer 7 so that it calls TIM7_IRQHandler
+// at exactly RATE times per second.  You'll need to select
+// a PSC value and then do some math on the system clock rate
+// to determine the value to set for ARR.  Set it to trigger
+// the DAC by enabling the Update Trigger in the CR2 MMS field.
+void init_tim7(void)
+{
+    RCC -> APB1ENR |= RCC_APB1ENR_TIM7EN;
+    TIM7 -> PSC = 1-1;
+    TIM7 -> ARR = (48000000/RATE)-1;
+    TIM7 -> DIER |= TIM_DIER_UIE;
+    TIM7 -> CR2 = 0x20; //Set MMS bit 1
+    TIM7 -> CR1 |= TIM_CR1_CEN;
+    NVIC -> ISER[0] |= 1<<TIM7_IRQn;
+    NVIC_SetPriority(TIM7_IRQn,0);
 }
 
 // Find the voice current playing a note, and turn it off.
@@ -184,27 +222,15 @@ void pause_background_music() {
 
 void play_explosion()
 {
-    for(int i = 0; i < VOICES; i++) {
-        voice[i].in_use = 0;
-        voice[i].note = 0;
-        voice[i].chan = 0;
-        voice[i].volume = 0;
-        voice[i].step = 0;
-        voice[i].offset = 0;
-    }
     MIDI_Player *mp = midi_init(bomb_music);
     TIM3 -> CR1 |= TIM_CR1_CEN;
+    TIM6 -> CR1 &= ~TIM_CR1_CEN;
+    TIM7 -> CR1 |= TIM_CR1_CEN;
     //Spin until bomb sound done
     while(mp->nexttick != MAXTICKS);
     TIM3 -> CR1 &= ~TIM_CR1_CEN;
-    for(int i = 0; i < VOICES; i++) {
-        voice[i].in_use = 0;
-        voice[i].note = 0;
-        voice[i].chan = 0;
-        voice[i].volume = 0;
-        voice[i].step = 0;
-        voice[i].offset = 0;
-    }
+    TIM7 -> CR1 &= ~TIM_CR1_CEN;
+    TIM6 -> CR1 |= TIM_CR1_CEN;
 }
 
 void end_all_music() {

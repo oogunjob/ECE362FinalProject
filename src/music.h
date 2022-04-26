@@ -18,6 +18,8 @@ struct {
 void TIM6_DAC_IRQHandler(void);
 void init_dac(void);
 void init_tim6(void);
+void init_tim7(void);
+void TIM7_IRQHandler(void);
 void note_off(int time, int chan, int key, int velo);
 void note_on(int time, int chan, int key, int velo);
 void set_tempo(int time, int value, const MIDI_Header *hdr);

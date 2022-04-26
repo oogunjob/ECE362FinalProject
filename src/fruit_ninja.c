@@ -108,10 +108,7 @@ void fruit_ninja(){
     showScore(0);
     init_adc();
 
-
     //UNCOMMENT FOR SPI DEBUGGING
-
-
 
     //init_spi1();
     //spi1_init_oled();
@@ -209,7 +206,7 @@ void fruit_ninja(){
                             showLives(playerLives);
                             //Indicate bomb was cut; display this
                             current_fruit -> image = 'c';
-                            //play_explosion();
+                            play_explosion();
                         }
                         //break out of loop
                         if(!playerLives) {
@@ -251,7 +248,7 @@ void fruit_ninja(){
     }
     //Dramatic pause at end. Still display bomb, wipe everything else
     pause_background_music();
-    //play_explosion();
+    play_explosion();
     nano_wait(500000000);
     wipe_screen(score, playerLives);
     drawCurrFruit(current_fruit, current_fruit -> x, current_fruit -> y);
