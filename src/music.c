@@ -98,6 +98,7 @@ void set_tempo(int time, int value, const MIDI_Header *hdr)
     // microseconds, where N is the new tempo (value) divided by
     // the number of divisions per beat specified in the MIDI file header.
     TIM2->ARR = value/hdr->divisions - 1;
+    TIM3->ARR = value/hdr->divisions - 1;
 }
 
 const float pitch_array[] = {
@@ -134,15 +135,6 @@ void TIM3_IRQHandler(void)
     midi_play();
 }
 
-void play_explosion()
-{
-    MIDI_Player *mp = midi_init(bomb_music);
-    TIM3 -> CR1 |= TIM_CR1_CEN;
-    //Spin until bomb sound done
-    while(mp->nexttick < MAXTICKS);
-    TIM3 -> CR1 &= ~TIM_CR1_CEN;
-}
-
 // Configure timer 2 so that it invokes the Update interrupt
 // every n microseconds.  To do so, set the prescaler to divide
 // by 48.  Then the CNT will count microseconds up to the ARR value.
@@ -172,6 +164,13 @@ void init_tim3(int n) {
 }
 
 MIDI_Player* start_game_over_music() {
+    pause_background_music();
+    MIDI_Player *mp = midi_init(game_over_music);
+    TIM2 -> CR1 |= TIM_CR1_CEN;
+    return mp;
+}
+
+void pause_background_music() {
     TIM2 -> CR1 &= ~TIM_CR1_CEN;
     for(int i = 0; i < VOICES; i++) {
         voice[i].in_use = 0;
@@ -181,11 +180,34 @@ MIDI_Player* start_game_over_music() {
         voice[i].step = 0;
         voice[i].offset = 0;
     }
-    MIDI_Player *mp = midi_init(game_over_music);
-    TIM2 -> CR1 |= TIM_CR1_CEN;
-    return mp;
+}
+
+void play_explosion()
+{
+    for(int i = 0; i < VOICES; i++) {
+        voice[i].in_use = 0;
+        voice[i].note = 0;
+        voice[i].chan = 0;
+        voice[i].volume = 0;
+        voice[i].step = 0;
+        voice[i].offset = 0;
+    }
+    MIDI_Player *mp = midi_init(bomb_music);
+    TIM3 -> CR1 |= TIM_CR1_CEN;
+    //Spin until bomb sound done
+    while(mp->nexttick != MAXTICKS);
+    TIM3 -> CR1 &= ~TIM_CR1_CEN;
+    for(int i = 0; i < VOICES; i++) {
+        voice[i].in_use = 0;
+        voice[i].note = 0;
+        voice[i].chan = 0;
+        voice[i].volume = 0;
+        voice[i].step = 0;
+        voice[i].offset = 0;
+    }
 }
 
 void end_all_music() {
-    TIM2 -> CR1 &= ~TIM_CR1_CEN;
+    pause_background_music();
+    TIM3 -> CR1 &= ~TIM_CR1_CEN;
 }

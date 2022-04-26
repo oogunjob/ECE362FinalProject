@@ -28,4 +28,5 @@ void init_tim2(int n);
 void init_tim3(int n);
 MIDI_Player* start_game_over_music();
 void end_all_music();
+void pause_background_music();
 void play_explosion();

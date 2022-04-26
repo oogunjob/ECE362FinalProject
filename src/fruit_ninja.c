@@ -107,8 +107,14 @@ void fruit_ninja(){
     drawHearts(3);
     showScore(0);
     init_adc();
-    init_spi1();
-    spi1_init_oled();
+
+
+    //UNCOMMENT FOR SPI DEBUGGING
+
+
+
+    //init_spi1();
+    //spi1_init_oled();
     init_reads();
     MIDI_Player *mp = midi_init(background_music);
     // The default rate for a MIDI file is 2 beats per second
@@ -203,6 +209,7 @@ void fruit_ninja(){
                             showLives(playerLives);
                             //Indicate bomb was cut; display this
                             current_fruit -> image = 'c';
+                            //play_explosion();
                         }
                         //break out of loop
                         if(!playerLives) {
@@ -243,21 +250,23 @@ void fruit_ninja(){
         if(gameOver) {break;}
     }
     //Dramatic pause at end. Still display bomb, wipe everything else
+    pause_background_music();
+    //play_explosion();
+    nano_wait(500000000);
     wipe_screen(score, playerLives);
     drawCurrFruit(current_fruit, current_fruit -> x, current_fruit -> y);
-    //LEAVE ROOM FOR BOMB SOUND HERE---------------------------------------
+    nano_wait(500000000);
+    MIDI_Player* end = start_game_over_music();
     //Visual effect: blink hearts 6 times
-    for(int i = 0; i < 6; i++) {
+    for(int i = 0; i < 3; i++) {
         drawHearts();
         nano_wait(250000000);
         showLives(0);
         nano_wait(250000000);
     }
-    nano_wait(2500000000);
     show_gameover_screen(score, playerLives);
-    MIDI_Player* end = start_game_over_music();
     //spin until all ticks played
-    while(end->nexttick < MAXTICKS);
+    while(end->nexttick != MAXTICKS);
     //Turn off music player
     end_all_music();
 }
