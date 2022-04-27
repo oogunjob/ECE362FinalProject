@@ -76,6 +76,21 @@ Fruit *search(Fruit *head, const char name){
     }
     return NULL;
 }
+
+void deleteList(Fruit** head){
+
+    Fruit* current = *head;
+    Fruit* next;
+
+    while (current != NULL){
+        next = current -> next;
+        free(current);
+        current = next;
+    }
+
+   *head = NULL;
+}
+
 /* ===================================================================================
  * Game Logic and Scoring
  * ===================================================================================
@@ -107,9 +122,15 @@ void fruit_ninja(){
     drawHearts(3);
     showScore(0);
     init_adc();
-    init_spi1();
-    spi1_init_oled();
+
+    //UNCOMMENT FOR SPI DEBUGGING
+
+    //init_spi1();
+    //spi1_init_oled();
     init_reads();
+    MIDI_Player *mp = midi_init(background_music);
+    // The default rate for a MIDI file is 2 beats per second
+    // with 48 ticks per beat.  That's 500000/48 microseconds.
 
     //Initialize the TIM15 ISR
     init_tim15();
@@ -132,6 +153,9 @@ void fruit_ninja(){
         current_fruit = fruits;
         // loops through every fruit in the fruits linked list
         while (current_fruit != NULL) {
+            //Loop music player if reaches end
+            if (mp->nexttick >= MAXTICKS)
+                mp = midi_init(background_music);
 
             //Read x coordinate and output resulting pixel to SPI OLED
             int x_pixel = read_x();
@@ -197,6 +221,7 @@ void fruit_ninja(){
                             showLives(playerLives);
                             //Indicate bomb was cut; display this
                             current_fruit -> image = 'c';
+                            play_explosion();
                         }
                         //break out of loop
                         if(!playerLives) {
@@ -218,6 +243,7 @@ void fruit_ninja(){
                         // updates the score if the fruit swiped was NOT a bomb
                         current_fruit -> scored = true;
                         score += 1;
+                        play_score();
                     }
                     showScore(score);
 
@@ -237,18 +263,26 @@ void fruit_ninja(){
         if(gameOver) {break;}
     }
     //Dramatic pause at end. Still display bomb, wipe everything else
+    pause_background_music();
+    play_explosion();
+    nano_wait(500000000);
     wipe_screen(score, playerLives);
     drawCurrFruit(current_fruit, current_fruit -> x, current_fruit -> y);
-    //LEAVE ROOM FOR BOMB SOUND HERE---------------------------------------
+    nano_wait(500000000);
+    MIDI_Player* end = start_game_over_music();
     //Visual effect: blink hearts 6 times
-    for(int i = 0; i < 6; i++) {
+    for(int i = 0; i < 3; i++) {
         drawHearts();
         nano_wait(250000000);
         showLives(0);
         nano_wait(250000000);
     }
-    nano_wait(2500000000);
     show_gameover_screen(score, playerLives);
+    //spin until all ticks played
+    while(end->nexttick != MAXTICKS);
+    //Turn off music player
+    end_all_music();
+    deleteList(&fruits);
 }
 
 /* ===================================================================================
