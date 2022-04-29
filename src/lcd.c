@@ -24,6 +24,8 @@ lcd_dev_t lcddev;
 #define DC_HIGH do { GPIOB->BSRR = GPIO_BSRR_BS_14; } while(0)
 #define DC_LOW  do { GPIOB->BSRR = GPIO_BSRR_BR_14; } while(0)
 
+void nano_wait(unsigned int n);
+
 void init_lcd_spi(void)
 {
     RCC -> AHBENR |= RCC_AHBENR_GPIOBEN;
@@ -85,14 +87,6 @@ static void tft_reg_select(int val)
     }
 }
 
-//============================================================================
-// Wait for n nanoseconds. (Maximum: 4.294 seconds)
-//============================================================================
-static inline void nano_wait(unsigned int n) {
-    asm(    "        mov r0,%0\n"
-            "repeat: sub r0,#83\n"
-            "        bgt repeat\n" : : "r"(n) : "r0", "cc");
-}
 
 void LCD_Reset(void)
 {

@@ -1,7 +1,6 @@
 #include <stdlib.h>
 #include "stm32f0xx.h"
 #include "fruit_ninja.h"
-#include "oled.h"
 #include "swipe.h"
 
 #define SCREEN_WIDTH 240
@@ -168,14 +167,6 @@ void fruit_ninja(){
             //Allow fruit_ninja() to update drawing of this
             shift_into_vector(temp);
 
-    //#define TEST_FIRST
-    #ifdef TEST_FIRST
-        char string[21];
-        snprintf(string, 21, "X Pixel: %03d", vector[0].x);
-        spi1_display1(string);
-        snprintf(string, 21, "Y Pixel: %03d", vector[0].y);
-        spi1_display2(string);
-    #endif
             // checks if the fruit should be thrown
             if ((current_fruit -> throw) == true){
                 current_fruit -> prev_x = current_fruit -> x;

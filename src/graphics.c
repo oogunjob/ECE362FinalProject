@@ -89,23 +89,6 @@ void pic_overlay(Picture *dst, int xoffset, int yoffset, const Picture *src, int
 // A 100x100 picture uses 20000 bytes.  You have 32768 bytes of SRAM.
 #define TempPicturePtr(name,width,height) Picture name[(width)*(height)/6+2] = { {width,height,2} }
 
-//Erase a 3x3 square of pixels at the coordinates specified
-void erase3(int x, int y)
-{
-    TempPicturePtr(tmp,3,3); // Create a temporary 3x3 image.
-    pic_subset(tmp, &background, x-tmp->width/2, y-tmp->height/2); // Copy the background
-    LCD_DrawPicture(x-tmp->width/2,y-tmp->height/2, tmp); // Draw
-}
-
-//Update the displayed position of the img at the coordinates specified
-void update3(int x, int y, const Picture* img)
-{
-    TempPicturePtr(tmp,3,3); // Create a temporary 3x3 image.
-    pic_subset(tmp, &background, x-tmp->width/2, y-tmp->height/2); // Copy the background
-    pic_overlay(tmp, 0,0, img, 0xffff); // Overlay the img
-    LCD_DrawPicture(x-tmp->width/2,y-tmp->height/2, tmp); // Draw
-}
-
 //Erase a 40x40 square of pixels at the coordinates specified
 void erase40(int x, int y)
 {

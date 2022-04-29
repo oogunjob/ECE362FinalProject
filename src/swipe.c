@@ -1,7 +1,6 @@
 #include "stm32f0xx.h"
 #include <stdio.h>
 #include "swipe.h"
-#include "oled.h"
 #define SCREEN_HEIGHT 320
 #define SCREEN_WIDTH  240
 #define VECTOR_SIZE 3
