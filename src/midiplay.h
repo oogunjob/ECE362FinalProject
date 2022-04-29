@@ -2,7 +2,7 @@
 #define __MIDIPLAY_H__
 
 // The DAC rate
-#define RATE 20000
+#define RATE 10000
 // The wavetable size
 #define N 1000
 

@@ -178,7 +178,7 @@ void play_explosion() {
     note_on(0,0,53,100);
     note_on(0,0,50,100);
     note_on(0,0,48,100);
-    nano_wait(40000000);
+    nano_wait(80000000);
     note_off(0,0,60,100);
     note_off(0,0,59,100);
     note_off(0,0,57,100);
@@ -194,7 +194,7 @@ void play_score() {
     note_on(0,0,94,12);
     note_on(0,0,97,12);
     note_on(0,0,102,12);
-    nano_wait(40000000);
+    nano_wait(80000000);
     note_off(0,0,90,12);
     note_off(0,0,94,12);
     note_off(0,0,97,12);
@@ -203,5 +203,4 @@ void play_score() {
 
 void end_all_music() {
     pause_background_music();
-    TIM3 -> CR1 &= ~TIM_CR1_CEN;
 }

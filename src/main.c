@@ -1,6 +1,5 @@
 #include "stm32f0xx.h"
 #include <stdio.h>
-#include "oled.h"
 #include "fruit_ninja.h"
 /* ===================================================================================
  * NOTES
@@ -32,7 +31,6 @@
 #define SCREEN_HEIGHT 320
 #define SCREEN_WIDTH  240
 #define VECTOR_SIZE 15
-
 void internal_clock()
 {
     /* Disable HSE to allow use of the GPIOs */
@@ -68,7 +66,6 @@ void internal_clock()
     {
     }
 }
-
 
 int main(void)
 {
